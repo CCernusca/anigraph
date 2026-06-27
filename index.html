@@ -7,17 +7,50 @@
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
-    <a class="link-btn anilist-home" href="https://anilist.co" target="_blank" rel="noopener">AniList ↗</a>
-    <h1>anigraph</h1>
-    <div class="controls">
-      <label class="file-label">
-        Import anime list
-        <input id="file-input" type="file" accept=".txt" />
-        <span class="file-hint">One title per line</span>
-      </label>
-      <button id="search-btn" type="button" disabled>Search</button>
+    <div class="layout">
+      <header class="topbar">
+        <h1 class="site-title">anigraph</h1>
+        <a class="link-btn anilist-home" href="https://anilist.co" target="_blank" rel="noopener">AniList ↗</a>
+      </header>
+      <div class="content-area">
+        <aside class="sidebar-left"></aside>
+        <main class="center">
+          <section id="results"></section>
+        </main>
+        <aside class="sidebar-right">
+          <label class="file-label">
+            Import anime list
+            <input id="file-input" type="file" accept=".txt" />
+            <span class="file-hint">One title per line</span>
+          </label>
+          <button id="search-btn" type="button" disabled>Search</button>
+          <p id="feedback" class="feedback"></p>
+          <div class="settings">
+            <p class="label">Selection</p>
+            <div class="mode-switch">
+              <button class="mode-btn active" data-mode="percent">Accpt %</button>
+              <button class="mode-btn" data-mode="count">Top N</button>
+              <button class="mode-btn" data-mode="top-pct">Top %</button>
+              <button class="mode-btn" data-mode="genres">Genres</button>
+            </div>
+            <div id="setting-percent" class="setting-panel">
+              <div class="slider-row"><span>Min. acceptance</span><span id="percent-val">80</span><span>%</span></div>
+              <input type="range" id="percent-slider" min="0" max="100" value="80" />
+            </div>
+            <div id="setting-count" class="setting-panel" style="display:none">
+              <div class="slider-row"><span>Top tags</span><span id="count-val">5</span></div>
+              <input type="range" id="count-slider" min="1" max="20" value="5" />
+            </div>
+            <div id="setting-top-pct" class="setting-panel" style="display:none">
+              <div class="slider-row"><span>Top</span><span id="top-pct-val">25</span><span>%</span></div>
+              <input type="range" id="top-pct-slider" min="1" max="100" value="25" />
+            </div>
+          </div>
+        </aside>
+      </div>
     </div>
-    <section id="results"></section>
+    <svg id="connections-svg"></svg>
+    <div id="popup" class="anime-popup"></div>
     <script src="js/main.js"></script>
   </body>
 </html>

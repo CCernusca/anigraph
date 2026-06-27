@@ -7,17 +7,28 @@
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
-    <a class="link-btn anilist-home" href="https://anilist.co" target="_blank" rel="noopener">AniList ↗</a>
-    <h1>anigraph</h1>
-    <div class="controls">
-      <label class="file-label">
-        Import anime list
-        <input id="file-input" type="file" accept=".txt" />
-        <span class="file-hint">One title per line</span>
-      </label>
-      <button id="search-btn" type="button" disabled>Search</button>
+    <div class="layout">
+      <header class="topbar">
+        <h1 class="site-title">anigraph</h1>
+        <a class="link-btn anilist-home" href="https://anilist.co" target="_blank" rel="noopener">AniList ↗</a>
+      </header>
+      <div class="content-area">
+        <aside class="sidebar-left"></aside>
+        <main class="center">
+          <section id="results"></section>
+        </main>
+        <aside class="sidebar-right">
+          <label class="file-label">
+            Import anime list
+            <input id="file-input" type="file" accept=".txt" />
+            <span class="file-hint">One title per line</span>
+          </label>
+          <button id="search-btn" type="button" disabled>Search</button>
+          <p id="feedback" class="feedback"></p>
+        </aside>
+      </div>
     </div>
-    <section id="results"></section>
+    <div id="popup" class="anime-popup"></div>
     <script src="js/main.js"></script>
   </body>
 </html>

@@ -45,33 +45,77 @@ function renderTagsWithRank(tags) {
   ).join('')}</ul>`;
 }
 
-function renderResult({ media }) {
+function renderCircle({ media }, index) {
   const title = media.title.english ?? media.title.romaji;
-  const color = media.coverImage?.color ?? null;
+  const color = media.coverImage?.color ?? '#888';
   const cover = media.coverImage?.medium
-    ? `<img class="cover" src="${media.coverImage.medium}" alt="${title}" />`
-    : '';
-  const style = color
-    ? `style="background-color: ${color}22; border-color: ${color}66;"`
+    ? `<img src="${media.coverImage.medium}" alt="${title}" />`
     : '';
   return `
-    <article class="anime-card" ${style}>
-      <div class="card-header">
-        ${cover}
-        <h2 class="anime-title">${title}</h2>
-        <a class="link-btn anime-link" href="https://anilist.co/anime/${media.id}" target="_blank" rel="noopener"><span class="arrow">↗</span></a>
-      </div>
-      <p class="label">Genres</p>
-      ${renderGenres(media.genres)}
-      <p class="label">Tags</p>
-      ${renderTagsWithRank(media.tags)}
-    </article>
+    <div class="anime-circle" style="border-color: ${color};" data-index="${index}">
+      ${cover}
+    </div>
   `;
+}
+
+function buildPopupContent(media) {
+  const title = media.title.english ?? media.title.romaji;
+  return `
+    <div class="popup-header">
+      <span class="popup-title">${title}</span>
+      <a class="link-btn anime-link" href="https://anilist.co/anime/${media.id}" target="_blank" rel="noopener"><span class="arrow">↗</span></a>
+    </div>
+    <p class="label">Genres</p>
+    ${renderGenres(media.genres)}
+    <p class="label">Tags</p>
+    ${renderTagsWithRank(media.tags)}
+  `;
+}
+
+const MARGIN = 8;
+
+function positionPopup(popup, x, y) {
+  popup.style.left = x + 'px';
+  popup.style.top = y + 'px';
+  popup.style.maxWidth = '';
+  popup.style.maxHeight = '';
+
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const rect = popup.getBoundingClientRect();
+
+  if (rect.right > vw - MARGIN) {
+    const left = Math.max(MARGIN, vw - rect.width - MARGIN);
+    popup.style.left = left + 'px';
+    if (left === MARGIN) popup.style.maxWidth = (vw - 2 * MARGIN) + 'px';
+  }
+  if (rect.bottom > vh - MARGIN) {
+    const top = Math.max(MARGIN, vh - rect.height - MARGIN);
+    popup.style.top = top + 'px';
+    if (top === MARGIN) popup.style.maxHeight = (vh - 2 * MARGIN) + 'px';
+  }
 }
 
 const fileInput = document.getElementById('file-input');
 const searchBtn = document.getElementById('search-btn');
 const results = document.getElementById('results');
+const feedback = document.getElementById('feedback');
+const popup = document.getElementById('popup');
+
+let mediaStore = [];
+
+results.addEventListener('mousemove', (e) => {
+  const circle = e.target.closest('.anime-circle');
+  if (!circle) { popup.style.display = 'none'; return; }
+  const idx = parseInt(circle.dataset.index);
+  popup.innerHTML = buildPopupContent(mediaStore[idx]);
+  popup.style.display = 'block';
+  positionPopup(popup, e.clientX, e.clientY);
+});
+
+results.addEventListener('mouseleave', () => {
+  popup.style.display = 'none';
+});
 
 fileInput.addEventListener('change', () => {
   searchBtn.disabled = !fileInput.files[0];
@@ -85,25 +129,30 @@ searchBtn.addEventListener('click', async () => {
   const terms = text.split('\n').map(l => l.trim()).filter(Boolean);
 
   if (!terms.length) {
-    results.innerHTML = '<p class="feedback">File is empty.</p>';
+    feedback.textContent = 'File is empty.';
+    results.innerHTML = '';
     return;
   }
 
-  results.innerHTML = `<p class="feedback">Searching ${terms.length} title${terms.length > 1 ? 's' : ''}…</p>`;
+  feedback.textContent = `Searching ${terms.length} title${terms.length > 1 ? 's' : ''}…`;
+  results.innerHTML = '';
 
   try {
     const resultList = await fetchAnimeList(terms);
     const found = resultList.filter(r => r.media);
     if (!found.length) {
-      results.innerHTML = '<p class="feedback">Invalid title in list.</p>';
+      feedback.textContent = 'Invalid title in list.';
       return;
     }
-    results.innerHTML = found.map(renderResult).join('');
+    feedback.textContent = '';
+    mediaStore = found.map(r => r.media);
+    results.innerHTML = found.map((r, i) => renderCircle(r, i)).join('');
   } catch (err) {
+    results.innerHTML = '';
     if (err instanceof RateLimitError) {
-      results.innerHTML = `<p class="feedback">Rate limited — try again in ${err.retryAfter}s.</p>`;
+      feedback.textContent = `Rate limited — try again in ${err.retryAfter}s.`;
     } else {
-      results.innerHTML = `<p class="feedback">Error: ${err.message}</p>`;
+      feedback.textContent = `Error: ${err.message}`;
     }
   }
 });

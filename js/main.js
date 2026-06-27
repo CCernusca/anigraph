@@ -35,13 +35,32 @@ async function fetchAnimeList(terms) {
   return terms.map((term, i) => ({ term, media: data[`anime${i}`] ?? null }));
 }
 
-function renderGenres(genres) {
-  return `<ul class="tag-list">${genres.map(g => `<li>${g}</li>`).join('')}</ul>`;
+let relevanceMode = 'percent';
+let relevancePercent = 80;
+let relevanceCount = 5;
+let relevanceTopPct = 25;
+
+function getSelection(media) {
+  if (relevanceMode === 'genres') return media.genres.map(g => ({ name: g }));
+  const tags = media.tags;
+  if (relevanceMode === 'percent') return tags.filter(t => t.rank > relevancePercent);
+  if (relevanceMode === 'top-pct') {
+    const n = Math.max(1, Math.ceil(tags.length * relevanceTopPct / 100));
+    return [...tags].sort((a, b) => b.rank - a.rank).slice(0, n);
+  }
+  return [...tags].sort((a, b) => b.rank - a.rank).slice(0, relevanceCount);
 }
 
-function renderTagsWithRank(tags, color) {
+function renderGenres(genres, selectedSet) {
+  return `<ul class="tag-list">${genres.map(g => {
+    if (selectedSet?.has(g)) return `<li class="relevant">${g}</li>`;
+    return `<li>${g}</li>`;
+  }).join('')}</ul>`;
+}
+
+function renderTagsWithRank(tags, color, selectedSet) {
   return `<ul class="tag-list">${tags.map(t => {
-    if (t.rank > 80) {
+    if (selectedSet.has(t.name)) {
       const c = color ?? '#ffffff';
       const style = `background-color:${c}33;color:${c};border:1px solid ${c}88;`;
       return `<li class="relevant" style="${style}">${t.name} <span class="pct">${t.rank}%</span></li>`;
@@ -65,15 +84,18 @@ function renderCircle({ media }, index) {
 
 function buildPopupContent(media) {
   const title = media.title.english ?? media.title.romaji;
+  const sel = new Set(getSelection(media).map(s => s.name));
+  const genreSet = relevanceMode === 'genres' ? sel : null;
+  const tagSet = relevanceMode === 'genres' ? new Set() : sel;
   return `
     <div class="popup-header">
       <span class="popup-title">${title}</span>
       <a class="link-btn anime-link" href="https://anilist.co/anime/${media.id}" target="_blank" rel="noopener"><span class="arrow">↗</span></a>
     </div>
     <p class="label">Genres</p>
-    ${renderGenres(media.genres)}
+    ${renderGenres(media.genres, genreSet)}
     <p class="label">Tags</p>
-    ${renderTagsWithRank(media.tags, media.coverImage?.color)}
+    ${renderTagsWithRank(media.tags, media.coverImage?.color, tagSet)}
   `;
 }
 
@@ -130,13 +152,13 @@ function drawConnections(found) {
     return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
   });
 
-  const relevantTags = found.map(({ media }) =>
-    new Set(media.tags.filter(t => t.rank > 80).map(t => t.name))
+  const selectionSets = found.map(({ media }) =>
+    new Set(getSelection(media).map(s => s.name))
   );
 
   for (let i = 0; i < found.length; i++) {
     for (let j = i + 1; j < found.length; j++) {
-      const shared = [...relevantTags[i]].filter(tag => relevantTags[j].has(tag));
+      const shared = [...selectionSets[i]].filter(name => selectionSets[j].has(name));
       if (!shared.length) continue;
 
       const { x: x1, y: y1 } = centers[i];
@@ -159,6 +181,15 @@ const searchBtn = document.getElementById('search-btn');
 const results = document.getElementById('results');
 const feedback = document.getElementById('feedback');
 const popup = document.getElementById('popup');
+const percentSlider = document.getElementById('percent-slider');
+const countSlider = document.getElementById('count-slider');
+const topPctSlider = document.getElementById('top-pct-slider');
+const percentVal = document.getElementById('percent-val');
+const countVal = document.getElementById('count-val');
+const topPctVal = document.getElementById('top-pct-val');
+const settingPercent = document.getElementById('setting-percent');
+const settingCount = document.getElementById('setting-count');
+const settingTopPct = document.getElementById('setting-top-pct');
 
 let mediaStore = [];
 let highlightedCircles = [];
@@ -181,6 +212,8 @@ function highlightCircles(...indices) {
 }
 
 document.addEventListener('mousemove', (e) => {
+  if (e.target.closest?.('.anime-popup')) return;
+
   const x = e.clientX, y = e.clientY;
 
   const circle = e.target.closest?.('.anime-circle');
@@ -193,7 +226,8 @@ document.addEventListener('mousemove', (e) => {
     });
     popup.innerHTML = buildPopupContent(mediaStore[idx]);
     popup.style.display = 'block';
-    positionPopup(x, y);
+    const r = circle.getBoundingClientRect();
+    positionPopup(r.right + MARGIN, r.top);
     return;
   }
 
@@ -204,13 +238,50 @@ document.addEventListener('mousemove', (e) => {
       highlightedLines.push(conn.line);
       popup.innerHTML = buildConnectionPopup(conn.shared);
       popup.style.display = 'block';
-      positionPopup(x, y);
+      positionPopup((conn.x1 + conn.x2) / 2 + MARGIN, (conn.y1 + conn.y2) / 2);
       return;
     }
   }
 
   clearHighlights();
   popup.style.display = 'none';
+});
+
+function redrawIfLoaded() {
+  if (!mediaStore.length) return;
+  clearHighlights();
+  popup.style.display = 'none';
+  requestAnimationFrame(() => drawConnections(mediaStore.map(media => ({ media }))));
+}
+
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    relevanceMode = btn.dataset.mode;
+    settingPercent.style.display = relevanceMode === 'percent' ? '' : 'none';
+    settingCount.style.display = relevanceMode === 'count' ? '' : 'none';
+    settingTopPct.style.display = relevanceMode === 'top-pct' ? '' : 'none';
+    redrawIfLoaded();
+  });
+});
+
+percentSlider.addEventListener('input', () => {
+  relevancePercent = parseInt(percentSlider.value);
+  percentVal.textContent = relevancePercent;
+  redrawIfLoaded();
+});
+
+countSlider.addEventListener('input', () => {
+  relevanceCount = parseInt(countSlider.value);
+  countVal.textContent = relevanceCount;
+  redrawIfLoaded();
+});
+
+topPctSlider.addEventListener('input', () => {
+  relevanceTopPct = parseInt(topPctSlider.value);
+  topPctVal.textContent = relevanceTopPct;
+  redrawIfLoaded();
 });
 
 fileInput.addEventListener('change', () => {
@@ -242,6 +313,9 @@ searchBtn.addEventListener('click', async () => {
     }
     feedback.textContent = '';
     mediaStore = found.map(r => r.media);
+    const maxTags = Math.max(...mediaStore.map(m => m.tags.length));
+    countSlider.max = maxTags;
+    if (relevanceCount > maxTags) { relevanceCount = maxTags; countSlider.value = maxTags; countVal.textContent = maxTags; }
     results.innerHTML = found.map((r, i) => renderCircle(r, i)).join('');
     requestAnimationFrame(() => drawConnections(found));
   } catch (err) {

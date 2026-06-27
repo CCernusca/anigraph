@@ -170,7 +170,6 @@ body {
   padding: 1rem;
   min-width: 220px;
   overflow-y: auto;
-  pointer-events: none;
 }
 
 .popup-header {
@@ -259,4 +258,53 @@ body {
   margin-left: 0.25rem;
   color: #666;
   font-size: 0.7rem;
+}
+
+/* Settings */
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mode-switch {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 0.25rem 0;
+  font-size: 0.8rem;
+  background: transparent;
+  color: #666;
+  border: 1px solid #444;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.mode-btn.active {
+  background: #2a2a2a;
+  color: #fff;
+  border-color: #fff;
+}
+
+.setting-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.slider-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #aaa;
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: #fff;
+  cursor: pointer;
 }

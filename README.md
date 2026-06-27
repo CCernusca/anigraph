@@ -2,6 +2,8 @@
 
 A little webapp for visualising information and statistics about anime.
 
+<img width="1367" height="797" alt="image" src="https://github.com/user-attachments/assets/d0e09941-e723-4091-9e0d-c8a68ea85ed1" />
+
 ## Usage
 
 Open `index.html` in a browser — no build step required.

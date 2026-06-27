@@ -35,6 +35,35 @@ async function fetchAnimeList(terms) {
   return terms.map((term, i) => ({ term, media: data[`anime${i}`] ?? null }));
 }
 
+async function fetchBatchWithSplit(terms) {
+  let deferred = [];
+  let current = terms;
+  const allResults = [];
+
+  while (current.length > 0) {
+    try {
+      const res = await fetchAnimeList(current);
+      allResults.push(...res);
+      current = deferred.flat();
+      deferred = [];
+      if (current.length > 0) {
+        feedback.textContent = `Fetching remaining ${current.length} title${current.length > 1 ? 's' : ''}…`;
+      }
+    } catch (err) {
+      const match = err.message?.match(/max query complexity should be (\d+) but got (\d+)/i);
+      if (!match) throw err;
+      const max = parseInt(match[1]), got = parseInt(match[2]);
+      const keepCount = Math.max(1, Math.floor(current.length * max / got));
+      if (keepCount >= current.length) throw err;
+      deferred.push(current.slice(keepCount));
+      current = current.slice(0, keepCount);
+      feedback.textContent = `Query too complex — splitting into smaller batches…`;
+    }
+  }
+
+  return allResults;
+}
+
 let relevanceMode = 'percent';
 let relevancePercent = 80;
 let relevanceCount = 5;
@@ -444,7 +473,7 @@ searchBtn.addEventListener('click', async () => {
   results.innerHTML = '';
 
   try {
-    const resultList = await fetchAnimeList(terms);
+    const resultList = await fetchBatchWithSplit(terms);
     const found = resultList.filter(r => r.media);
     if (!found.length) {
       feedback.textContent = 'Invalid title in list.';

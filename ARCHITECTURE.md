@@ -45,3 +45,7 @@ Search terms are embedded as JSON string literals (`JSON.stringify`) so they are
 ### Error shape
 
 AniList returns HTTP 200 even for query errors. Errors surface as a top-level `errors` array in the JSON body alongside a partial (or null) `data`. The fetch function checks `errors[0].message` before reading `data`.
+
+### HTTP 404
+
+AniList returns HTTP `404` when any `Media` alias in the batch finds no match. The response body still contains a partial `data` object (null for unmatched aliases) plus a `errors` array. The fetch function reads the body regardless of status — if `data` is present, unmatched entries are treated as "not found" cards. Only if `data` is absent entirely (true structural 404) is an error thrown.

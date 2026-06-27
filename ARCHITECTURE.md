@@ -69,6 +69,46 @@ Search terms are embedded as JSON string literals (`JSON.stringify`) for safe es
 
 `null` aliases (no match) are filtered out silently. Found media stored in `mediaStore[]` for popup rendering.
 
+## Camera
+
+Virtual camera state: `camX, camY` (world-space center) and `camZoom`. Initialized to `(0,0,1)` on each new search.
+
+**Pan:** `mousedown` on background sets `isPanning = true`, records start positions. `mousemove` updates `camX/Y` via `panStartCamX - dx/camZoom`. `mouseup` clears flag.
+
+**Zoom:** `wheel` event (non-passive, `preventDefault`). Zoom-to-pointer: record world position under cursor before zoom, recompute `camX/Y` to keep that world point under the cursor after zoom. Clamped to `[0.1, 10]`.
+
+**Projection** (world → screen, per frame in `updateSimDOM`):
+```
+screenX = (worldX - camX) * camZoom + rect.width/2
+screenY = (worldY - camY) * camZoom + rect.height/2
+```
+Circles: `left/top` set to screen position; `transform: translate(-50%,-50%) scale(camZoom)`.
+SVG lines: screen coords + `rect.left/top` offset for viewport space.
+
+## Physics simulation
+
+Nodes (`simNodes[]`) live in world space (origin 0,0). Each frame:
+
+1. **Spring forces** — connected pairs: `F = SPRING_K × strength² × (dist − SPRING_REST)` along the axis. `strength = shared.length / maxShared` (relative, 0–1).
+2. **Repulsion** — all pairs: `F = REPEL_K / dist²` (inverse square).
+3. **Centering** — each node: `F = −CENTER_K × pos` (weak pull toward world origin).
+4. **Integrate** — `vel = (vel + F) × DRAG; pos += vel`. No boundary clamping — nodes free to leave center area.
+
+Constants: `SPRING_K=0.04`, `SPRING_REST=130`, `REPEL_K=5000`, `CENTER_K=0.002`, `DRAG=0.82`.
+
+Loop runs via `requestAnimationFrame`. Stopped/restarted on new search. Selection mode changes rebuild spring topology without resetting node positions.
+
+## Z-index layering
+
+| Layer | z-index |
+|-------|---------|
+| Topbar, sidebars | 10 (above graph) |
+| Circles (`.anime-circle`) | 6 |
+| Connection SVG | 5 |
+| Popup (`#popup`) | 1000 |
+
+Sidebars/topbar have `background: var(--bg)` so graph elements sliding under them are occluded.
+
 ## Selection modes and connections
 
 `getSelection(media)` returns a list of `{name}` objects representing the active selection for an anime. Four modes, toggled via sidebar:

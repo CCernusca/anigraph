@@ -140,39 +140,141 @@ function distToSegment(px, py, x1, y1, x2, y2) {
 }
 
 let connections = [];
+let lineConnMap = new Map();
 
-function drawConnections(found) {
+const CIRCLE_R = 40;
+const SPRING_REST = 130;
+const SPRING_K = 0.04;
+const REPEL_K = 5000;
+const CENTER_K = 0.002;
+const DRAG = 0.82;
+
+let simNodes = [];
+let simSprings = [];
+let animFrameId = null;
+
+let camX = 0, camY = 0, camZoom = 1;
+let isPanning = false, panStartX = 0, panStartY = 0, panStartCamX = 0, panStartCamY = 0;
+
+function initSimulation(count) {
+  camX = 0; camY = 0; camZoom = 1;
+  simNodes = Array.from({ length: count }, () => ({
+    x: (Math.random() - 0.5) * 200,
+    y: (Math.random() - 0.5) * 200,
+    vx: 0, vy: 0,
+  }));
+}
+
+function buildSprings(found) {
+  const selSets = found.map(({ media }) =>
+    new Set(getSelection(media).map(s => s.name))
+  );
+  simSprings = [];
+  for (let i = 0; i < found.length; i++) {
+    for (let j = i + 1; j < found.length; j++) {
+      const shared = [...selSets[i]].filter(n => selSets[j].has(n));
+      if (shared.length) simSprings.push({ i, j, shared });
+    }
+  }
+  const maxShared = Math.max(...simSprings.map(s => s.shared.length), 1);
+  simSprings.forEach(s => { s.strength = s.shared.length / maxShared; });
+}
+
+function stepPhysics() {
+  const n = simNodes.length;
+  const fx = new Array(n).fill(0);
+  const fy = new Array(n).fill(0);
+
+  for (const { i, j, strength } of simSprings) {
+    const dx = simNodes[j].x - simNodes[i].x;
+    const dy = simNodes[j].y - simNodes[i].y;
+    const dist = Math.hypot(dx, dy) || 0.001;
+    const f = SPRING_K * strength ** 2 * (dist - SPRING_REST);
+    const ux = dx / dist, uy = dy / dist;
+    fx[i] += f * ux; fy[i] += f * uy;
+    fx[j] -= f * ux; fy[j] -= f * uy;
+  }
+
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      const dx = simNodes[j].x - simNodes[i].x;
+      const dy = simNodes[j].y - simNodes[i].y;
+      const distSq = Math.max(1, dx * dx + dy * dy);
+      const dist = Math.sqrt(distSq);
+      const f = REPEL_K / distSq;
+      const ux = dx / dist, uy = dy / dist;
+      fx[i] -= f * ux; fy[i] -= f * uy;
+      fx[j] += f * ux; fy[j] += f * uy;
+    }
+  }
+
+  for (let i = 0; i < n; i++) {
+    fx[i] -= CENTER_K * simNodes[i].x;
+    fy[i] -= CENTER_K * simNodes[i].y;
+  }
+
+  for (let i = 0; i < n; i++) {
+    simNodes[i].vx = (simNodes[i].vx + fx[i]) * DRAG;
+    simNodes[i].vy = (simNodes[i].vy + fy[i]) * DRAG;
+    simNodes[i].x += simNodes[i].vx;
+    simNodes[i].y += simNodes[i].vy;
+  }
+}
+
+function updateSimDOM() {
+  const circleEls = document.querySelectorAll('.anime-circle');
+  const rect = results.getBoundingClientRect();
+  const vcx = rect.width / 2, vcy = rect.height / 2;
+
+  circleEls.forEach((el, i) => {
+    const sx = (simNodes[i].x - camX) * camZoom + vcx;
+    const sy = (simNodes[i].y - camY) * camZoom + vcy;
+    el.style.left = sx + 'px';
+    el.style.top = sy + 'px';
+    el.style.transform = `translate(-50%, -50%) scale(${camZoom})`;
+  });
+
+  connections.forEach(conn => {
+    conn.x1 = rect.left + (simNodes[conn.i].x - camX) * camZoom + vcx;
+    conn.y1 = rect.top + (simNodes[conn.i].y - camY) * camZoom + vcy;
+    conn.x2 = rect.left + (simNodes[conn.j].x - camX) * camZoom + vcx;
+    conn.y2 = rect.top + (simNodes[conn.j].y - camY) * camZoom + vcy;
+    conn.line.setAttribute('x1', conn.x1);
+    conn.line.setAttribute('y1', conn.y1);
+    conn.line.setAttribute('x2', conn.x2);
+    conn.line.setAttribute('y2', conn.y2);
+  });
+}
+
+function startSimulation() {
+  if (animFrameId) cancelAnimationFrame(animFrameId);
+  function loop() {
+    stepPhysics();
+    updateSimDOM();
+    animFrameId = requestAnimationFrame(loop);
+  }
+  animFrameId = requestAnimationFrame(loop);
+}
+
+function stopSimulation() {
+  if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+}
+
+function drawConnections() {
   const svg = document.getElementById('connections-svg');
   svg.innerHTML = '';
   connections = [];
-
-  const circles = document.querySelectorAll('.anime-circle');
-  const centers = Array.from(circles).map(c => {
-    const r = c.getBoundingClientRect();
-    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-  });
-
-  const selectionSets = found.map(({ media }) =>
-    new Set(getSelection(media).map(s => s.name))
-  );
-
-  for (let i = 0; i < found.length; i++) {
-    for (let j = i + 1; j < found.length; j++) {
-      const shared = [...selectionSets[i]].filter(name => selectionSets[j].has(name));
-      if (!shared.length) continue;
-
-      const { x: x1, y: y1 } = centers[i];
-      const { x: x2, y: y2 } = centers[j];
-
-      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      line.setAttribute('x1', x1); line.setAttribute('y1', y1);
-      line.setAttribute('x2', x2); line.setAttribute('y2', y2);
-      line.setAttribute('stroke', 'rgba(255,255,255,0.35)');
-      line.setAttribute('stroke-width', '3');
-      svg.appendChild(line);
-
-      connections.push({ x1, y1, x2, y2, shared, i, j, line });
-    }
+  lineConnMap = new Map();
+  for (const { i, j, shared, strength } of simSprings) {
+    const baseStroke = `rgba(255,255,255,${(0.1 + 0.25 * strength).toFixed(2)})`;
+    const activeStroke = `rgba(255,255,255,${(0.5 + 0.4 * strength).toFixed(2)})`;
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('stroke', baseStroke);
+    line.setAttribute('stroke-width', '3');
+    svg.appendChild(line);
+    const conn = { x1: 0, y1: 0, x2: 0, y2: 0, shared, i, j, line, baseStroke, activeStroke };
+    connections.push(conn);
+    lineConnMap.set(line, conn);
   }
 }
 
@@ -198,7 +300,10 @@ let highlightedLines = [];
 function clearHighlights() {
   highlightedCircles.forEach(el => el.classList.remove('highlighted'));
   highlightedCircles = [];
-  highlightedLines.forEach(l => l.setAttribute('stroke', 'rgba(255,255,255,0.35)'));
+  highlightedLines.forEach(l => {
+    const conn = lineConnMap.get(l);
+    l.setAttribute('stroke', conn ? conn.baseStroke : 'rgba(255,255,255,0.35)');
+  });
   highlightedLines = [];
 }
 
@@ -214,6 +319,12 @@ function highlightCircles(...indices) {
 document.addEventListener('mousemove', (e) => {
   if (e.target.closest?.('.anime-popup')) return;
 
+  if (isPanning) {
+    camX = panStartCamX - (e.clientX - panStartX) / camZoom;
+    camY = panStartCamY - (e.clientY - panStartY) / camZoom;
+    return;
+  }
+
   const x = e.clientX, y = e.clientY;
 
   const circle = e.target.closest?.('.anime-circle');
@@ -221,7 +332,7 @@ document.addEventListener('mousemove', (e) => {
     clearHighlights();
     const idx = parseInt(circle.dataset.index);
     connections.filter(c => c.i === idx || c.j === idx).forEach(c => {
-      c.line.setAttribute('stroke', 'rgba(255,255,255,0.9)');
+      c.line.setAttribute('stroke', c.activeStroke);
       highlightedLines.push(c.line);
     });
     popup.innerHTML = buildPopupContent(mediaStore[idx]);
@@ -234,7 +345,7 @@ document.addEventListener('mousemove', (e) => {
   for (const conn of connections) {
     if (distToSegment(x, y, conn.x1, conn.y1, conn.x2, conn.y2) <= LINE_HIT_DIST) {
       highlightCircles(conn.i, conn.j);
-      conn.line.setAttribute('stroke', 'rgba(255,255,255,0.9)');
+      conn.line.setAttribute('stroke', conn.activeStroke);
       highlightedLines.push(conn.line);
       popup.innerHTML = buildConnectionPopup(conn.shared);
       popup.style.display = 'block';
@@ -251,7 +362,8 @@ function redrawIfLoaded() {
   if (!mediaStore.length) return;
   clearHighlights();
   popup.style.display = 'none';
-  requestAnimationFrame(() => drawConnections(mediaStore.map(media => ({ media }))));
+  buildSprings(mediaStore.map(media => ({ media })));
+  drawConnections();
 }
 
 document.querySelectorAll('.mode-btn').forEach(btn => {
@@ -283,6 +395,33 @@ topPctSlider.addEventListener('input', () => {
   topPctVal.textContent = relevanceTopPct;
   redrawIfLoaded();
 });
+
+document.addEventListener('mousedown', (e) => {
+  if (e.target.closest('.anime-circle') || e.target.closest('.anime-popup')) return;
+  isPanning = true;
+  panStartX = e.clientX; panStartY = e.clientY;
+  panStartCamX = camX; panStartCamY = camY;
+  document.body.style.cursor = 'grabbing';
+});
+
+document.addEventListener('mouseup', () => {
+  if (!isPanning) return;
+  isPanning = false;
+  document.body.style.cursor = '';
+});
+
+document.addEventListener('wheel', (e) => {
+  if (e.target.closest('.anime-popup')) return;
+  e.preventDefault();
+  const rect = results.getBoundingClientRect();
+  const vcx = rect.left + rect.width / 2;
+  const vcy = rect.top + rect.height / 2;
+  const wx = (e.clientX - vcx) / camZoom + camX;
+  const wy = (e.clientY - vcy) / camZoom + camY;
+  camZoom = Math.max(0.1, Math.min(10, camZoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1)));
+  camX = wx - (e.clientX - vcx) / camZoom;
+  camY = wy - (e.clientY - vcy) / camZoom;
+}, { passive: false });
 
 fileInput.addEventListener('change', () => {
   searchBtn.disabled = !fileInput.files[0];
@@ -317,7 +456,12 @@ searchBtn.addEventListener('click', async () => {
     countSlider.max = maxTags;
     if (relevanceCount > maxTags) { relevanceCount = maxTags; countSlider.value = maxTags; countVal.textContent = maxTags; }
     results.innerHTML = found.map((r, i) => renderCircle(r, i)).join('');
-    requestAnimationFrame(() => drawConnections(found));
+    stopSimulation();
+    initSimulation(found.length);
+    buildSprings(found);
+    drawConnections();
+    updateSimDOM();
+    startSimulation();
   } catch (err) {
     results.innerHTML = '';
     if (err instanceof RateLimitError) {

@@ -8,24 +8,36 @@ body {
   font-family: sans-serif;
 }
 
-#search-form {
+.controls {
   display: flex;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 1rem;
   margin-bottom: 1.5rem;
 }
 
-#search-input {
-  flex: 1;
-  padding: 0.5rem 0.75rem;
-  font-size: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+.file-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: bold;
+  cursor: pointer;
 }
 
-button[type="submit"] {
+#search-btn {
   padding: 0.5rem 1rem;
   font-size: 1rem;
   cursor: pointer;
+}
+
+#search-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.file-hint {
+  font-weight: normal;
+  color: #888;
+  font-size: 0.875rem;
 }
 
 #results .feedback {
@@ -39,6 +51,11 @@ button[type="submit"] {
   border-radius: 6px;
   padding: 1rem;
   margin-bottom: 1rem;
+}
+
+.anime-card.not-found {
+  border-color: #f5c6cb;
+  background: #fff5f5;
 }
 
 #results .anime-title {

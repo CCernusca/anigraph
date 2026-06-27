@@ -24,17 +24,23 @@ Browser loads `index.html` directly. JS in `js/main.js` manipulates the DOM at r
 
 Endpoint: `https://graphql.anilist.co` (public, no auth required for read queries).
 
-On search submit, `js/main.js` POSTs a GraphQL `Page` query (`perPage: 8, sort: SEARCH_MATCH`) with `type: ANIME` and the user's search string. Returns up to 8 ranked matches. Response fields used per item: `title`, `genres`, `tags[].name`. Each result rendered as an `.anime-card` article into `#results` via `innerHTML`.
+User imports a `.txt` file (one title per line). `js/main.js` reads the file via `File.text()`, splits on newlines, strips blanks, then fires a **single batched GraphQL request** using field aliases — one `Media` alias per title:
+
+```graphql
+query {
+  anime0: Media(search: "Naruto", type: ANIME) { ... }
+  anime1: Media(search: "Bleach", type: ANIME) { ... }
+}
+```
+
+Search terms are embedded as JSON string literals (`JSON.stringify`) so they are safely escaped. Response is a map of `anime0…animeN` keys. Each is matched back to its input term by index. `null` values (no AniList match) rendered as "not found" cards. Found results show `title`, `genres`, `tags[].name`.
 
 ### Rate limits
 
 - **90 requests/minute** per IP. Exceeding returns HTTP `429` with a `Retry-After` header.
 - Response headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`.
 - HTTP `429` caught as `RateLimitError` (subclass of `Error`). `Retry-After` header parsed; user shown "Rate limited — try again in Xs." Falls back to 60s if header absent.
-
-### Pagination
-
-`Page` supports `page` + `perPage` (max `perPage: 50`). Current impl fetches page 1 only. No infinite scroll or load-more implemented yet.
+- Batching all titles into one request minimises request count against this limit.
 
 ### Error shape
 

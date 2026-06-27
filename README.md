@@ -6,7 +6,7 @@ A little webapp for visualising information and statistics about anime.
 
 Open `index.html` in a browser — no build step required.
 
-Type an anime name into the search box and press **Search**. The app queries the AniList API and displays the anime's genres and tags if found.
+Import a `.txt` file with one anime title per line. The app sends a single batched query to the AniList API and displays genres and tags for each title found. Titles with no match are shown as "Not found".
 
 ## Project structure
 

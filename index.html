@@ -8,10 +8,14 @@
   </head>
   <body>
     <h1>anigraph</h1>
-    <form id="search-form">
-      <input id="search-input" type="text" placeholder="Search anime…" autocomplete="off" />
-      <button type="submit">Search</button>
-    </form>
+    <div class="controls">
+      <label class="file-label">
+        Import anime list
+        <input id="file-input" type="file" accept=".txt" />
+        <span class="file-hint">One title per line</span>
+      </label>
+      <button id="search-btn" type="button" disabled>Search</button>
+    </div>
     <section id="results"></section>
     <script src="js/main.js"></script>
   </body>

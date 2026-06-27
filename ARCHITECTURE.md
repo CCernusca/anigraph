@@ -128,6 +128,18 @@ On selection mode or slider change, `redrawIfLoaded()` clears highlights and red
 
 `tags[].rank` is the AniList community agreement percentage (0–100). Shown next to each tag name in the popup.
 
+### Complexity splitting
+
+AniList returns a complexity error (`errors[0].message` matches `/max query complexity should be (\d+) but got (\d+)/i`) when the batched query is too large.
+
+`fetchBatchWithSplit(terms)` handles this automatically:
+
+1. Try full `current` batch.
+2. On complexity error: parse `max` and `got`; compute `keepCount = floor(current.length × max/got)`; move `current.slice(keepCount)` into `deferred`; retry `current.slice(0, keepCount)`.
+3. Repeat until `current` succeeds.
+4. Combine all `deferred` entries into one new `current` batch; go to step 1.
+5. Accumulate all partial results; return merged list in call order.
+
 ### Rate limits
 
 - **90 requests/minute** per IP. Exceeding returns HTTP `429` with a `Retry-After` header.

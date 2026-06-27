@@ -136,12 +136,20 @@ body {
 /* Circles */
 
 .anime-circle {
+  position: relative;
+  z-index: 6;
   width: 80px;
   height: 80px;
   border-radius: 50%;
   overflow: hidden;
   border: 3px solid #888;
   cursor: pointer;
+  transition: border-width 0.1s;
+}
+
+.anime-circle:hover,
+.anime-circle.highlighted {
+  border-width: 7px;
 }
 
 .anime-circle img {
@@ -225,6 +233,26 @@ body {
   padding: 0.15rem 0.4rem;
   font-size: 0.75rem;
   color: #ddd;
+}
+
+.tag-list li.relevant {
+  background: #1a3a1a;
+  color: #7fff7f;
+  border: 1px solid #3a6a3a;
+}
+
+#connections-svg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 5;
+}
+
+#popup > .label {
+  margin-top: 0;
 }
 
 .pct {

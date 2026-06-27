@@ -146,18 +146,21 @@ const CIRCLE_R = 40;
 const SPRING_REST = 130;
 const SPRING_K = 0.04;
 const REPEL_K = 5000;
+const CENTER_K = 0.002;
 const DRAG = 0.82;
 
 let simNodes = [];
 let simSprings = [];
 let animFrameId = null;
 
+let camX = 0, camY = 0, camZoom = 1;
+let isPanning = false, panStartX = 0, panStartY = 0, panStartCamX = 0, panStartCamY = 0;
+
 function initSimulation(count) {
-  const rect = results.getBoundingClientRect();
-  const cx = rect.width / 2, cy = rect.height / 2;
+  camX = 0; camY = 0; camZoom = 1;
   simNodes = Array.from({ length: count }, () => ({
-    x: cx + (Math.random() - 0.5) * 200,
-    y: cy + (Math.random() - 0.5) * 200,
+    x: (Math.random() - 0.5) * 200,
+    y: (Math.random() - 0.5) * 200,
     vx: 0, vy: 0,
   }));
 }
@@ -178,8 +181,6 @@ function buildSprings(found) {
 }
 
 function stepPhysics() {
-  const rect = results.getBoundingClientRect();
-  const W = rect.width, H = rect.height;
   const n = simNodes.length;
   const fx = new Array(n).fill(0);
   const fy = new Array(n).fill(0);
@@ -208,29 +209,36 @@ function stepPhysics() {
   }
 
   for (let i = 0; i < n; i++) {
+    fx[i] -= CENTER_K * simNodes[i].x;
+    fy[i] -= CENTER_K * simNodes[i].y;
+  }
+
+  for (let i = 0; i < n; i++) {
     simNodes[i].vx = (simNodes[i].vx + fx[i]) * DRAG;
     simNodes[i].vy = (simNodes[i].vy + fy[i]) * DRAG;
     simNodes[i].x += simNodes[i].vx;
     simNodes[i].y += simNodes[i].vy;
-    if (simNodes[i].x < CIRCLE_R) { simNodes[i].x = CIRCLE_R; simNodes[i].vx = 0; }
-    if (simNodes[i].x > W - CIRCLE_R) { simNodes[i].x = W - CIRCLE_R; simNodes[i].vx = 0; }
-    if (simNodes[i].y < CIRCLE_R) { simNodes[i].y = CIRCLE_R; simNodes[i].vy = 0; }
-    if (simNodes[i].y > H - CIRCLE_R) { simNodes[i].y = H - CIRCLE_R; simNodes[i].vy = 0; }
   }
 }
 
 function updateSimDOM() {
   const circleEls = document.querySelectorAll('.anime-circle');
   const rect = results.getBoundingClientRect();
+  const vcx = rect.width / 2, vcy = rect.height / 2;
+
   circleEls.forEach((el, i) => {
-    el.style.left = simNodes[i].x + 'px';
-    el.style.top = simNodes[i].y + 'px';
+    const sx = (simNodes[i].x - camX) * camZoom + vcx;
+    const sy = (simNodes[i].y - camY) * camZoom + vcy;
+    el.style.left = sx + 'px';
+    el.style.top = sy + 'px';
+    el.style.transform = `translate(-50%, -50%) scale(${camZoom})`;
   });
+
   connections.forEach(conn => {
-    conn.x1 = simNodes[conn.i].x + rect.left;
-    conn.y1 = simNodes[conn.i].y + rect.top;
-    conn.x2 = simNodes[conn.j].x + rect.left;
-    conn.y2 = simNodes[conn.j].y + rect.top;
+    conn.x1 = rect.left + (simNodes[conn.i].x - camX) * camZoom + vcx;
+    conn.y1 = rect.top + (simNodes[conn.i].y - camY) * camZoom + vcy;
+    conn.x2 = rect.left + (simNodes[conn.j].x - camX) * camZoom + vcx;
+    conn.y2 = rect.top + (simNodes[conn.j].y - camY) * camZoom + vcy;
     conn.line.setAttribute('x1', conn.x1);
     conn.line.setAttribute('y1', conn.y1);
     conn.line.setAttribute('x2', conn.x2);
@@ -311,6 +319,12 @@ function highlightCircles(...indices) {
 document.addEventListener('mousemove', (e) => {
   if (e.target.closest?.('.anime-popup')) return;
 
+  if (isPanning) {
+    camX = panStartCamX - (e.clientX - panStartX) / camZoom;
+    camY = panStartCamY - (e.clientY - panStartY) / camZoom;
+    return;
+  }
+
   const x = e.clientX, y = e.clientY;
 
   const circle = e.target.closest?.('.anime-circle');
@@ -381,6 +395,33 @@ topPctSlider.addEventListener('input', () => {
   topPctVal.textContent = relevanceTopPct;
   redrawIfLoaded();
 });
+
+document.addEventListener('mousedown', (e) => {
+  if (e.target.closest('.anime-circle') || e.target.closest('.anime-popup')) return;
+  isPanning = true;
+  panStartX = e.clientX; panStartY = e.clientY;
+  panStartCamX = camX; panStartCamY = camY;
+  document.body.style.cursor = 'grabbing';
+});
+
+document.addEventListener('mouseup', () => {
+  if (!isPanning) return;
+  isPanning = false;
+  document.body.style.cursor = '';
+});
+
+document.addEventListener('wheel', (e) => {
+  if (e.target.closest('.anime-popup')) return;
+  e.preventDefault();
+  const rect = results.getBoundingClientRect();
+  const vcx = rect.left + rect.width / 2;
+  const vcy = rect.top + rect.height / 2;
+  const wx = (e.clientX - vcx) / camZoom + camX;
+  const wy = (e.clientY - vcy) / camZoom + camY;
+  camZoom = Math.max(0.1, Math.min(10, camZoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1)));
+  camX = wx - (e.clientX - vcx) / camZoom;
+  camY = wy - (e.clientY - vcy) / camZoom;
+}, { passive: false });
 
 fileInput.addEventListener('change', () => {
   searchBtn.disabled = !fileInput.files[0];

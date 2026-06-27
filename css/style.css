@@ -28,11 +28,14 @@ body {
 }
 
 .topbar {
+  position: relative;
+  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 1.5rem;
   border-bottom: var(--sep);
+  background: var(--bg);
 }
 
 .site-title {
@@ -43,16 +46,18 @@ body {
 .content-area {
   display: grid;
   grid-template-columns: var(--sidebar-w) 1fr var(--sidebar-w);
-  overflow: hidden;
 }
 
 .sidebar-left {
+  position: relative;
+  z-index: 10;
   border-right: var(--sep);
+  background: var(--bg);
 }
 
 .center {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   padding: 0;
 }
 
@@ -62,12 +67,15 @@ body {
 }
 
 .sidebar-right {
+  position: relative;
+  z-index: 10;
   border-left: var(--sep);
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
   overflow-y: auto;
+  background: var(--bg);
 }
 
 /* Buttons */

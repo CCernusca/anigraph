@@ -8,7 +8,7 @@ class RateLimitError extends Error {
 }
 
 function buildBatchQuery(terms) {
-  const fields = `title { romaji english } coverImage { medium color } genres tags { name rank }`;
+  const fields = `id title { romaji english } coverImage { medium color } genres tags { name rank }`;
   const aliases = terms
     .map((term, i) => `anime${i}: Media(search: ${JSON.stringify(term)}, type: ANIME) { ${fields} }`)
     .join('\n  ');
@@ -59,6 +59,7 @@ function renderResult({ media }) {
       <div class="card-header">
         ${cover}
         <h2 class="anime-title">${title}</h2>
+        <a class="link-btn anime-link" href="https://anilist.co/anime/${media.id}" target="_blank" rel="noopener"><span class="arrow">↗</span></a>
       </div>
       <p class="label">Genres</p>
       ${renderGenres(media.genres)}

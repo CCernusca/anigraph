@@ -6,6 +6,8 @@ A little webapp for visualising information and statistics about anime.
 
 Open `index.html` in a browser — no build step required.
 
+Type an anime name into the search box and press **Search**. The app queries the AniList API and displays the anime's genres and tags if found.
+
 ## Project structure
 
 ```

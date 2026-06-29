@@ -17,6 +17,7 @@ Open `index.html` in a browser — no build step required.
 Then:
 
 1. Use the **media type buttons** in the topbar to select Anime, Manga, or Novel. All input modes and features work for each type.
+   Use the **filter bar** (topbar, between type buttons and AniList link) to highlight matching circles by title — non-matching entries dim while typing.
 2. Use the **right sidebar** to import a `.txt` file (one title per line) and click **Search**.
 3. Matching entries appear as **circles** in a live physics simulation — nodes repel each other, shared-selection connections act as springs.
 4. **Drag** the center area to pan. **Scroll** over the center area to zoom.

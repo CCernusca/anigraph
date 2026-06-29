@@ -80,6 +80,15 @@ For each selection item (tag/genre) that appears in at least `clusterMin` connec
 
 The `document` `mousemove` fallback returns early when cursor is over `.sidebar-left`, preventing the per-frame `clearHighlights()` from erasing stat-hover highlights.
 
+## Graph search filter
+
+`#graph-search` text input in topbar. On `input` event: if query non-empty, adds `.filter-active` to `#results` and `.filter-match` to each `.anime-circle` whose `mediaStore[idx]` title (romaji or english) includes the query (case-insensitive). CSS:
+
+- `.filter-active .anime-circle` → `opacity: 0.15`
+- `.filter-active .anime-circle.filter-match` → `opacity: 1`, `border-width: 7px`
+
+On clear: removes `.filter-active` + all `.filter-match`. Cleared automatically on new Search. Independent of hover highlights — both can coexist.
+
 ## Media type
 
 Three buttons in topbar center: **Anime**, **Manga**, **Novel**. Sets `mediaType` state (`'ANIME'` | `'MANGA'` | `'NOVEL'`). Default: `'ANIME'`.

@@ -33,6 +33,10 @@ Then:
 
 *An image of the full interface of anigraph*
 
+<img width="1372" height="867" alt="image" src="https://github.com/user-attachments/assets/801d91a4-6cf4-49ef-882b-4202e7c3a241" />
+
+*Top 100 Anime being filtered for "Attack on Titan"*
+
 Anime sharing selection items are connected by lines. Spring stiffness and line opacity scale with connection strength (relative to the strongest connection). Configure physics and selection in the right sidebar:
 
 | Setting | Effect |

@@ -7,15 +7,26 @@ class RateLimitError extends Error {
   }
 }
 
+let mediaType = 'ANIME';
+
+function mediaTypeArgs() {
+  if (mediaType === 'NOVEL') return 'type: MANGA, format: NOVEL';
+  return `type: ${mediaType}`;
+}
+
+function mediaAnilistPath() {
+  return mediaType === 'ANIME' ? 'anime' : 'manga';
+}
+
 function buildBatchQuery(terms) {
-  const fields = `id title { romaji english } coverImage { medium color } genres tags { name rank }`;
+  const fields = `id title { romaji english } coverImage { medium color } genres tags { name rank } format`;
   const aliases = terms
-    .map((term, i) => `anime${i}: Media(search: ${JSON.stringify(term)}, type: ANIME) { ${fields} }`)
+    .map((term, i) => `m${i}: Media(search: ${JSON.stringify(term)}, ${mediaTypeArgs()}) { ${fields} }`)
     .join('\n  ');
   return `query {\n  ${aliases}\n}`;
 }
 
-async function fetchAnimeList(terms) {
+async function fetchMediaBatch(terms) {
   const res = await fetch(ANILIST_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -32,19 +43,20 @@ async function fetchAnimeList(terms) {
       : (errors?.[0]?.message ?? `HTTP ${res.status}`);
     throw new Error(msg);
   }
-  return terms.map((term, i) => ({ term, media: data[`anime${i}`] ?? null }));
+  return terms.map((term, i) => ({ term, media: data[`m${i}`] ?? null }));
 }
 
 async function fetchProfile(userName) {
+  const listType = mediaType === 'ANIME' ? 'ANIME' : 'MANGA';
   const res = await fetch(ANILIST_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ query: `query ($userName: String) {
-      MediaListCollection(userName: $userName, type: ANIME) {
+      MediaListCollection(userName: $userName, type: ${listType}) {
         lists {
           entries {
             media {
-              id title { romaji english } coverImage { medium color } genres tags { name rank }
+              id title { romaji english } coverImage { medium color } genres tags { name rank } format
             }
           }
         }
@@ -59,7 +71,9 @@ async function fetchProfile(userName) {
   if (!data) throw new Error(errors?.[0]?.message ?? `HTTP ${res.status}`);
   const collection = data.MediaListCollection;
   if (!collection) throw new Error('User not found or list is private.');
-  return collection.lists.flatMap(l => l.entries.map(e => e.media));
+  let items = collection.lists.flatMap(l => l.entries.map(e => e.media));
+  if (mediaType === 'NOVEL') items = items.filter(m => m.format === 'NOVEL');
+  return items;
 }
 
 async function fetchPopular(count) {
@@ -72,8 +86,8 @@ async function fetchPopular(count) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query: `query {
         Page(page: ${page}, perPage: ${perPage}) {
-          media(type: ANIME, sort: POPULARITY_DESC) {
-            id title { romaji english } coverImage { medium color } genres tags { name rank }
+          media(${mediaTypeArgs()}, sort: POPULARITY_DESC) {
+            id title { romaji english } coverImage { medium color } genres tags { name rank } format
           }
         }
       }` }),
@@ -85,7 +99,7 @@ async function fetchPopular(count) {
     const { data, errors } = await res.json();
     if (!data) throw new Error(errors?.[0]?.message ?? `HTTP ${res.status}`);
     all.push(...data.Page.media);
-    if (page < pages) feedback.textContent = `Fetched ${all.length} / ${count}…`;
+    if (page < pages) feedback.textContent = `Fetched ${all.length} / ${count} ${mediaType.toLowerCase()}…`;
   }
   return all.slice(0, count);
 }
@@ -97,7 +111,7 @@ async function fetchBatchWithSplit(terms) {
 
   while (current.length > 0) {
     try {
-      const res = await fetchAnimeList(current);
+      const res = await fetchMediaBatch(current);
       allResults.push(...res);
       current = deferred.flat();
       deferred = [];
@@ -177,7 +191,7 @@ function buildPopupContent(media) {
   return `
     <div class="popup-header">
       <span class="popup-title">${title}</span>
-      <a class="link-btn anime-link" href="https://anilist.co/anime/${media.id}" target="_blank" rel="noopener"><span class="arrow">↗</span></a>
+      <a class="link-btn anime-link" href="https://anilist.co/${mediaAnilistPath()}/${media.id}" target="_blank" rel="noopener"><span class="arrow">↗</span></a>
     </div>
     <p class="label">Genres</p>
     ${renderGenres(media.genres, genreSet)}
@@ -631,7 +645,7 @@ function updateStats() {
   const visible = sorted.filter(([, count]) => count >= clusterMin);
   statsEl.innerHTML = `<p class="label">Overview</p>
   <div class="stat-counts">
-    <span>${n} anime</span>
+    <span>${n} ${mediaType.toLowerCase()}</span>
     <span>${totalConns} connection${totalConns !== 1 ? 's' : ''}</span>
   </div>
   <p class="label">Clusters</p>
@@ -665,6 +679,14 @@ document.querySelectorAll('.mode-btn[data-mode]').forEach(btn => {
     settingCount.style.display = relevanceMode === 'count' ? '' : 'none';
     settingTopPct.style.display = relevanceMode === 'top-pct' ? '' : 'none';
     redrawIfLoaded();
+  });
+});
+
+document.querySelectorAll('.media-type-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.media-type-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    mediaType = btn.dataset.type;
   });
 });
 
@@ -852,14 +874,14 @@ searchBtn.addEventListener('click', async () => {
       if (!found.length) { feedback.textContent = 'Invalid title in list.'; return; }
       mediaArray = found.map(r => r.media);
     } else if (inputMode === 'popular') {
-      feedback.textContent = `Fetching top ${popularCount} popular anime…`;
+      feedback.textContent = `Fetching top ${popularCount} popular ${mediaType.toLowerCase()}…`;
       mediaArray = await fetchPopular(popularCount);
     } else if (inputMode === 'profile') {
       const userName = document.getElementById('profile-username').value.trim();
       if (!userName) return;
-      feedback.textContent = `Fetching anime list for ${userName}…`;
+      feedback.textContent = `Fetching ${mediaType.toLowerCase()} list for ${userName}…`;
       mediaArray = await fetchProfile(userName);
-      if (!mediaArray.length) { feedback.textContent = 'No anime found in list.'; return; }
+      if (!mediaArray.length) { feedback.textContent = `No ${mediaType.toLowerCase()} found in list.`; return; }
     } else {
       return;
     }

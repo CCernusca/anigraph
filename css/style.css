@@ -133,6 +133,16 @@ body {
   background: var(--bg);
 }
 
+.media-type-switch {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.media-type-switch .mode-btn {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.85rem;
+}
+
 /* Buttons */
 
 .link-btn {

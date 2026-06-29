@@ -10,9 +10,19 @@ Static HTML webapp. No build tooling, no framework, no bundler. Dark-themed, ful
 
 ```
 index.html      shell — layout markup, links stylesheet + script
+favicon.svg     browser tab icon — inline SVG node-graph spelling "ag"
 css/style.css   global styles, layout, component styles
 js/main.js      all application logic
 ```
+
+## Favicon
+
+`favicon.svg` — `viewBox="0 0 33 50"`, default transparent background. Two node clusters:
+
+- **'a & g' cluster** (hue 190, cyan): 5 nodes forming a diamond (top/left/bottom/right) + stem-bottom. Lines: open circle A-B-C-D + descending stem D-E. Cluster polygon: `hsla(190,60%,60%,0.10)` fill.
+- **'g' cluster** (hue 30, orange): 3 nodes — 3-node descending hook (E-F-G-H). Cluster polygon: `hsla(30,60%,60%,0.10)` fill.
+
+Nodes are simple filled circles to improve readability.
 
 ## Layout
 

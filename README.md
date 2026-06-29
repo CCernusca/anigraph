@@ -2,20 +2,33 @@
 
 A little webapp for visualising information and statistics about anime.
 
-<img width="1367" height="797" alt="image" src="https://github.com/user-attachments/assets/d0e09941-e723-4091-9e0d-c8a68ea85ed1" />
+<img width="1367" height="797" alt="image" src="https://github.com/user-attachments/assets/de7712c8-eaa7-4f5e-8a13-eefef23e458d" />
+
+*A graph of shared tags among the top 100 popular anime on AniList with highlighted clusters*
 
 ## Usage
 
+Visit [the deployed webapp](https://ccernusca.github.io/anigraph/)
+
+Or:
+
 Open `index.html` in a browser — no build step required.
+
+Then:
 
 1. Use the **right sidebar** to import a `.txt` file (one anime title per line) and click **Search**.
 2. Matching anime appear as **circles** in a live physics simulation — nodes repel each other, shared-selection connections act as springs.
 3. **Drag** the center area to pan. **Scroll** over the center area to zoom.
 4. **Hover** a circle to see a popup with genres and community-rated tags; its connection lines highlight.
-5. **Hover** a connection line (in the center area) to see shared selection items; its two endpoint circles highlight.
+5. **Hover** a connection line (in the center area) to see shared selection items (tags or genres); its two endpoint circles highlight.
 6. Click **↗** in the popup to open the anime's AniList page.
 7. The **left sidebar** shows total anime and connection counts, plus a bar chart of selection items sorted by how many connections they appear in. **Hover** a bar to highlight all connections, circles, and the matching cluster polygon.
 8. **Cluster polygons** are drawn around groups of anime sharing a selection item. **Hover** a polygon to highlight it and its connections. Labels sit outside the polygon border, placed to avoid overlapping other labels.
+9. The controls in the **right sidebar** can be used to change selection criteria for connections and clusters, such as community acceptance of a tag or number of connections in a cluster.
+
+<img width="1918" height="868" alt="image" src="https://github.com/user-attachments/assets/4a3e5826-3085-4b39-9267-859cf273e081" />
+
+*An image of the full interface of anigraph*
 
 Anime sharing selection items are connected by lines. Spring stiffness and line opacity scale with connection strength (relative to the strongest connection). Configure physics and selection in the right sidebar:
 

@@ -740,6 +740,26 @@ document.getElementById('vis-labels').addEventListener('change', e => {
   document.getElementById('labels-svg').style.display = e.target.checked ? '' : 'none';
 });
 
+document.getElementById('graph-search').addEventListener('input', e => {
+  const q = e.target.value.trim().toLowerCase();
+  const circleEls = document.querySelectorAll('.anime-circle');
+  if (!q) {
+    results.classList.remove('filter-active');
+    circleEls.forEach(el => el.classList.remove('filter-match'));
+    return;
+  }
+  results.classList.add('filter-active');
+  circleEls.forEach(el => {
+    const idx = parseInt(el.dataset.index);
+    const media = mediaStore[idx];
+    const match = media && (
+      (media.title.romaji ?? '').toLowerCase().includes(q) ||
+      (media.title.english ?? '').toLowerCase().includes(q)
+    );
+    el.classList.toggle('filter-match', !!match);
+  });
+});
+
 percentSlider.addEventListener('input', () => {
   relevancePercent = parseInt(percentSlider.value);
   percentVal.textContent = relevancePercent;
@@ -849,6 +869,8 @@ function displayResults(mediaArray) {
 searchBtn.addEventListener('click', async () => {
   stopSimulation();
   results.innerHTML = '';
+  results.classList.remove('filter-active');
+  document.getElementById('graph-search').value = '';
   document.getElementById('connections-svg').innerHTML = '';
   document.getElementById('clusters-svg').innerHTML = '';
   document.getElementById('labels-svg').innerHTML = '';

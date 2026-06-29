@@ -80,6 +80,37 @@ For each selection item (tag/genre) that appears in at least `clusterMin` connec
 
 The `document` `mousemove` fallback returns early when cursor is over `.sidebar-left`, preventing the per-frame `clearHighlights()` from erasing stat-hover highlights.
 
+## Media type
+
+Three buttons in topbar center: **Anime**, **Manga**, **Novel**. Sets `mediaType` state (`'ANIME'` | `'MANGA'` | `'NOVEL'`). Default: `'ANIME'`.
+
+Affects all fetch paths:
+
+| Path | ANIME | MANGA | NOVEL |
+|------|-------|-------|-------|
+| Batch search | `type: ANIME` | `type: MANGA` | `type: MANGA, format: NOVEL` |
+| Popular | `type: ANIME` | `type: MANGA` | `type: MANGA, format: NOVEL` |
+| Profile | `MediaListCollection(type: ANIME)` | `MediaListCollection(type: MANGA)` | `MediaListCollection(type: MANGA)` + client filter `format === 'NOVEL'` |
+
+AniList popup link uses `/anime/${id}` for ANIME, `/manga/${id}` for MANGA and NOVEL (AniList stores novels under `/manga/`).
+
+Stats label ("N anime") reflects the active media type. Feedback strings likewise. All graph features (clusters, connections, physics, visuals) are media-type-agnostic — same code path after fetch.
+
+`format` field is now requested in all queries (needed for novel client-side filtering and available in popup data).
+
+## Visuals toggles
+
+Four checkboxes in right sidebar "Visuals" section. Each hides/shows a layer:
+
+| Checkbox | Effect |
+|----------|--------|
+| Connections | `#connections-svg` `display: none` |
+| Anime covers | Toggles `.hide-covers` on `#results`; CSS rule `.hide-covers .anime-circle img { display: none }` hides images while circles remain |
+| Clusters | `#clusters-svg` `display: none` |
+| Labels | `#labels-svg` `display: none` |
+
+All checked by default. Changes take effect immediately.
+
 ## Data source — AniList GraphQL API
 
 Endpoint: `https://graphql.anilist.co` (public, no auth required for read queries).
@@ -88,12 +119,12 @@ User imports a `.txt` file (one title per line). `js/main.js` reads it via `File
 
 ```graphql
 query {
-  anime0: Media(search: "Naruto", type: ANIME) { ... }
-  anime1: Media(search: "Bleach", type: ANIME) { ... }
+  m0: Media(search: "Naruto", type: ANIME) { ... }
+  m1: Media(search: "Bleach", type: ANIME) { ... }
 }
 ```
 
-Search terms are embedded as JSON string literals (`JSON.stringify`) for safe escaping. Response is a map of `anime0…animeN` keys matched back to input terms by index. Fields fetched per title: `id`, `title{romaji,english}`, `coverImage{medium,color}`, `genres`, `tags{name,rank}`.
+`type` and optional `format` args are determined by the active `mediaType` state via `mediaTypeArgs()`. Search terms are embedded as JSON string literals (`JSON.stringify`) for safe escaping. Response is a map of `m0…mN` keys matched back to input terms by index. Fields fetched per title: `id`, `title{romaji,english}`, `coverImage{medium,color}`, `genres`, `tags{name,rank}`, `format`.
 
 `null` aliases (no match) are filtered out silently. Found media stored in `mediaStore[]` for popup rendering.
 

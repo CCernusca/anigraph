@@ -133,6 +133,16 @@ body {
   background: var(--bg);
 }
 
+.media-type-switch {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.media-type-switch .mode-btn {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.85rem;
+}
+
 /* Buttons */
 
 .link-btn {
@@ -394,4 +404,38 @@ input[type="range"] {
   width: 100%;
   accent-color: #fff;
   cursor: pointer;
+}
+
+.vis-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: #aaa;
+  cursor: pointer;
+  user-select: none;
+}
+
+.vis-row input[type="checkbox"] {
+  accent-color: #fff;
+  cursor: pointer;
+}
+
+.hide-covers .anime-circle img {
+  display: none;
+}
+
+.text-input {
+  width: 100%;
+  background: transparent;
+  border: 1px solid #444;
+  border-radius: 3px;
+  color: #fff;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.5rem;
+  outline: none;
+}
+
+.text-input:focus {
+  border-color: #fff;
 }

@@ -173,7 +173,7 @@ let lineConnMap = new Map();
 
 const CIRCLE_R = 40;
 const SPRING_REST = 130;
-const SPRING_K = 0.04;
+let springK = 0.04;
 const REPEL_K = 5000;
 const CENTER_K = 0.002;
 const DRAG = 0.82;
@@ -218,7 +218,7 @@ function stepPhysics() {
     const dx = simNodes[j].x - simNodes[i].x;
     const dy = simNodes[j].y - simNodes[i].y;
     const dist = Math.hypot(dx, dy) || 0.001;
-    const f = SPRING_K * strength ** 2 * (dist - SPRING_REST);
+    const f = springK * strength ** 2 * (dist - SPRING_REST);
     const ux = dx / dist, uy = dy / dist;
     fx[i] += f * ux; fy[i] += f * uy;
     fx[j] -= f * ux; fy[j] -= f * uy;
@@ -312,6 +312,8 @@ const searchBtn = document.getElementById('search-btn');
 const results = document.getElementById('results');
 const feedback = document.getElementById('feedback');
 const popup = document.getElementById('popup');
+const springSlider = document.getElementById('spring-slider');
+const springVal = document.getElementById('spring-val');
 const percentSlider = document.getElementById('percent-slider');
 const countSlider = document.getElementById('count-slider');
 const topPctSlider = document.getElementById('top-pct-slider');
@@ -385,9 +387,39 @@ document.addEventListener('mousemove', (e) => {
     }
   }
 
+  if (e.target.closest('.sidebar-left')) return;
   clearHighlights();
   popup.style.display = 'none';
 });
+
+function updateStats() {
+  const statsEl = document.getElementById('stats');
+  if (!statsEl) return;
+  const n = mediaStore.length;
+  const totalConns = simSprings.length;
+  if (n === 0) { statsEl.innerHTML = ''; return; }
+  const tagCounts = new Map();
+  for (const { shared } of simSprings) {
+    for (const name of shared) tagCounts.set(name, (tagCounts.get(name) || 0) + 1);
+  }
+  const sorted = [...tagCounts.entries()].sort((a, b) => b[1] - a[1]);
+  const maxCount = sorted.length > 0 ? sorted[0][1] : 1;
+  statsEl.innerHTML = `<p class="label">Overview</p>
+  <div class="stat-counts">
+    <span>${n} anime</span>
+    <span>${totalConns} connection${totalConns !== 1 ? 's' : ''}</span>
+  </div>
+  <p class="label">By tag</p>
+  <div class="stat-bars">${sorted.map(([name, count]) => {
+    const pct = totalConns > 0 ? Math.round(count / totalConns * 100) : 0;
+    const barW = (count / maxCount * 100).toFixed(1);
+    return `<div class="stat-bar-row" data-tag="${name.replace(/"/g, '&quot;')}">
+      <div class="stat-bar-label" title="${name}">${name}</div>
+      <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${barW}%"></div></div>
+      <div class="stat-bar-nums">${count} · ${pct}%</div>
+    </div>`;
+  }).join('')}</div>`;
+}
 
 function redrawIfLoaded() {
   if (!mediaStore.length) return;
@@ -395,6 +427,7 @@ function redrawIfLoaded() {
   popup.style.display = 'none';
   buildSprings(mediaStore.map(media => ({ media })));
   drawConnections();
+  updateStats();
 }
 
 document.querySelectorAll('.mode-btn').forEach(btn => {
@@ -407,6 +440,11 @@ document.querySelectorAll('.mode-btn').forEach(btn => {
     settingTopPct.style.display = relevanceMode === 'top-pct' ? '' : 'none';
     redrawIfLoaded();
   });
+});
+
+springSlider.addEventListener('input', () => {
+  springK = parseInt(springSlider.value) / 100;
+  springVal.textContent = springSlider.value;
 });
 
 percentSlider.addEventListener('input', () => {
@@ -460,6 +498,31 @@ fileInput.addEventListener('change', () => {
   searchBtn.disabled = !fileInput.files[0];
 });
 
+document.getElementById('stats').addEventListener('mouseover', (e) => {
+  const row = e.target.closest('.stat-bar-row');
+  if (!row) return;
+  const tag = row.dataset.tag;
+  clearHighlights();
+  const circleEls = document.querySelectorAll('.anime-circle');
+  for (const conn of connections) {
+    if (conn.shared.includes(tag)) {
+      conn.line.setAttribute('stroke', conn.activeStroke);
+      highlightedLines.push(conn.line);
+      [conn.i, conn.j].forEach(idx => {
+        const el = circleEls[idx];
+        if (el && !el.classList.contains('highlighted')) {
+          el.classList.add('highlighted');
+          highlightedCircles.push(el);
+        }
+      });
+    }
+  }
+});
+
+document.getElementById('stats').addEventListener('mouseleave', () => {
+  clearHighlights();
+});
+
 searchBtn.addEventListener('click', async () => {
   const file = fileInput.files[0];
   if (!file) return;
@@ -493,6 +556,7 @@ searchBtn.addEventListener('click', async () => {
     initSimulation(found.length);
     buildSprings(found);
     drawConnections();
+    updateStats();
     updateSimDOM();
     startSimulation();
   } catch (err) {

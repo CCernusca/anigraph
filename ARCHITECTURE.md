@@ -42,15 +42,27 @@ Circles have `position: relative; z-index: 6`, placing them above the connection
 
 A single `#popup` element lives at body level (`position: fixed; z-index: 1000; pointer-events: none`). On `mousemove`:
 
-1. `e.target.closest('.anime-circle')` identifies the hovered circle.
+1. `e.target.closest('.anime-circle')` identifies the hovered circle (works anywhere in the viewport — circles can drift outside center bounds).
 2. `mediaStore[data-index]` retrieves the media object.
 3. Popup content (title, AniList link, genres, tags+rank) is rendered into `#popup` via `innerHTML`. Selected items are highlighted per active selection mode.
-4. All connection lines involving that circle are highlighted (stroke alpha 0.35 → 0.9).
-5. `positionPopup(clientX, clientY)` places the top-left corner at the cursor, then clamps to keep within the viewport (8px margin). If the popup is wider/taller than the available space, `max-width`/`max-height` are set accordingly.
-6. Hovering a connection line instead: shows shared selection items in popup, highlights both endpoint circles.
-7. Popup and highlights clear when cursor leaves all circles and lines.
+4. All connection lines involving that circle are highlighted (stroke alpha increased).
+5. `positionPopup(x, y)` places the popup to the right of the hovered element, clamped within the viewport.
+6. Hovering a connection line (inside `.center` only): shows shared selection items in popup, highlights both endpoint circles.
+7. Popup and highlights clear when cursor leaves all interactive elements.
 
-`pointer-events: none` prevents the popup from intercepting mouse events. The `↗` link has `pointer-events: auto` so it remains clickable.
+The `mousemove` fallback that calls `clearHighlights` skips when cursor is over `.sidebar-left`, so stat-bar hover highlights persist. The `↗` link has `pointer-events: auto` so it remains clickable.
+
+## Stats panel (left sidebar)
+
+`#stats` inside `.sidebar-left`. Populated by `updateStats()` after every `drawConnections()` call (search + selection mode/slider changes).
+
+**Counts:** anime count and connection count.
+
+**Bar chart:** one row per unique selection item (tag or genre) that appears in at least one connection. Rows sorted by connection count descending. Bar width scales to the item with the most connections (relative). Each row shows `count · pct%` where `pct = round(count / totalConnections × 100)`.
+
+`data-tag` attribute on each row stores the item name. Delegated `mouseover` on `#stats` reads `row.dataset.tag`, iterates `connections[]`, highlights all matching lines (activeStroke) and their endpoint circles — calling `clearHighlights()` once upfront rather than per-connection to avoid resetting earlier iterations. `mouseleave` on `#stats` clears highlights.
+
+The `document` `mousemove` fallback returns early when cursor is over `.sidebar-left`, preventing the per-frame `clearHighlights()` from erasing stat-hover highlights.
 
 ## Data source — AniList GraphQL API
 
@@ -73,9 +85,9 @@ Search terms are embedded as JSON string literals (`JSON.stringify`) for safe es
 
 Virtual camera state: `camX, camY` (world-space center) and `camZoom`. Initialized to `(0,0,1)` on each new search.
 
-**Pan:** `mousedown` on background sets `isPanning = true`, records start positions. `mousemove` updates `camX/Y` via `panStartCamX - dx/camZoom`. `mouseup` clears flag.
+**Pan:** `mousedown` inside `.center` (not on a circle or popup) sets `isPanning = true`, records start positions. `mousemove` updates `camX/Y` via `panStartCamX - dx/camZoom`. `mouseup` clears flag. Pan is restricted to the center area — clicks on sidebars/topbar have no effect.
 
-**Zoom:** `wheel` event (non-passive, `preventDefault`). Zoom-to-pointer: record world position under cursor before zoom, recompute `camX/Y` to keep that world point under the cursor after zoom. Clamped to `[0.1, 10]`.
+**Zoom:** `wheel` event inside `.center` only (non-passive, `preventDefault`). Zoom-to-pointer: record world position under cursor before zoom, recompute `camX/Y` to keep that world point under the cursor after zoom. Clamped to `[0.1, 10]`.
 
 **Projection** (world → screen, per frame in `updateSimDOM`):
 ```

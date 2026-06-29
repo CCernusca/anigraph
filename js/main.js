@@ -35,6 +35,61 @@ async function fetchAnimeList(terms) {
   return terms.map((term, i) => ({ term, media: data[`anime${i}`] ?? null }));
 }
 
+async function fetchProfile(userName) {
+  const res = await fetch(ANILIST_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query: `query ($userName: String) {
+      MediaListCollection(userName: $userName, type: ANIME) {
+        lists {
+          entries {
+            media {
+              id title { romaji english } coverImage { medium color } genres tags { name rank }
+            }
+          }
+        }
+      }
+    }`, variables: { userName } }),
+  });
+  if (res.status === 429) {
+    const retryAfter = parseInt(res.headers.get('Retry-After') ?? '60', 10);
+    throw new RateLimitError(retryAfter);
+  }
+  const { data, errors } = await res.json();
+  if (!data) throw new Error(errors?.[0]?.message ?? `HTTP ${res.status}`);
+  const collection = data.MediaListCollection;
+  if (!collection) throw new Error('User not found or list is private.');
+  return collection.lists.flatMap(l => l.entries.map(e => e.media));
+}
+
+async function fetchPopular(count) {
+  const perPage = 50;
+  const pages = Math.ceil(count / perPage);
+  const all = [];
+  for (let page = 1; page <= pages; page++) {
+    const res = await fetch(ANILIST_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: `query {
+        Page(page: ${page}, perPage: ${perPage}) {
+          media(type: ANIME, sort: POPULARITY_DESC) {
+            id title { romaji english } coverImage { medium color } genres tags { name rank }
+          }
+        }
+      }` }),
+    });
+    if (res.status === 429) {
+      const retryAfter = parseInt(res.headers.get('Retry-After') ?? '60', 10);
+      throw new RateLimitError(retryAfter);
+    }
+    const { data, errors } = await res.json();
+    if (!data) throw new Error(errors?.[0]?.message ?? `HTTP ${res.status}`);
+    all.push(...data.Page.media);
+    if (page < pages) feedback.textContent = `Fetched ${all.length} / ${count}…`;
+  }
+  return all.slice(0, count);
+}
+
 async function fetchBatchWithSplit(terms) {
   let deferred = [];
   let current = terms;
@@ -63,6 +118,9 @@ async function fetchBatchWithSplit(terms) {
 
   return allResults;
 }
+
+let inputMode = 'local';
+let popularCount = 10;
 
 let relevanceMode = 'percent';
 let relevancePercent = 80;
@@ -598,15 +656,37 @@ function redrawIfLoaded() {
   updateStats();
 }
 
-document.querySelectorAll('.mode-btn').forEach(btn => {
+document.querySelectorAll('.mode-btn[data-mode]').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.mode-btn[data-mode]').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     relevanceMode = btn.dataset.mode;
     settingPercent.style.display = relevanceMode === 'percent' ? '' : 'none';
     settingCount.style.display = relevanceMode === 'count' ? '' : 'none';
     settingTopPct.style.display = relevanceMode === 'top-pct' ? '' : 'none';
     redrawIfLoaded();
+  });
+});
+
+document.querySelectorAll('.input-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.input-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    inputMode = btn.dataset.input;
+    document.getElementById('input-local').style.display = inputMode === 'local' ? '' : 'none';
+    document.getElementById('input-popular').style.display = inputMode === 'popular' ? '' : 'none';
+    document.getElementById('input-profile').style.display = inputMode === 'profile' ? '' : 'none';
+    if (inputMode === 'local') searchBtn.disabled = !fileInput.files[0];
+    else if (inputMode === 'popular') searchBtn.disabled = false;
+    else if (inputMode === 'profile') searchBtn.disabled = !document.getElementById('profile-username').value.trim();
+  });
+});
+
+document.querySelectorAll('.popular-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.popular-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    popularCount = parseInt(btn.dataset.count);
   });
 });
 
@@ -620,6 +700,22 @@ clusterMinSlider.addEventListener('input', () => {
   clusterMinVal.textContent = clusterMin;
   drawClusters();
   updateStats();
+});
+
+document.getElementById('vis-connections').addEventListener('change', e => {
+  document.getElementById('connections-svg').style.display = e.target.checked ? '' : 'none';
+});
+
+document.getElementById('vis-covers').addEventListener('change', e => {
+  document.getElementById('results').classList.toggle('hide-covers', !e.target.checked);
+});
+
+document.getElementById('vis-clusters').addEventListener('change', e => {
+  document.getElementById('clusters-svg').style.display = e.target.checked ? '' : 'none';
+});
+
+document.getElementById('vis-labels').addEventListener('change', e => {
+  document.getElementById('labels-svg').style.display = e.target.checked ? '' : 'none';
 });
 
 percentSlider.addEventListener('input', () => {
@@ -670,7 +766,11 @@ document.addEventListener('wheel', (e) => {
 }, { passive: false });
 
 fileInput.addEventListener('change', () => {
-  searchBtn.disabled = !fileInput.files[0];
+  if (inputMode === 'local') searchBtn.disabled = !fileInput.files[0];
+});
+
+document.getElementById('profile-username').addEventListener('input', e => {
+  if (inputMode === 'profile') searchBtn.disabled = !e.target.value.trim();
 });
 
 document.getElementById('stats').addEventListener('mouseover', (e) => {
@@ -708,43 +808,63 @@ document.getElementById('stats').addEventListener('mouseleave', () => {
   clearHighlights();
 });
 
+function displayResults(mediaArray) {
+  mediaStore = mediaArray;
+  const maxTags = Math.max(...mediaStore.map(m => m.tags.length));
+  countSlider.max = maxTags;
+  if (relevanceCount > maxTags) { relevanceCount = maxTags; countSlider.value = maxTags; countVal.textContent = maxTags; }
+  results.innerHTML = mediaStore.map((media, i) => renderCircle({ media }, i)).join('');
+  stopSimulation();
+  initSimulation(mediaStore.length);
+  buildSprings(mediaStore.map(media => ({ media })));
+  drawConnections();
+  drawClusters();
+  updateStats();
+  updateSimDOM();
+  startSimulation();
+}
+
 searchBtn.addEventListener('click', async () => {
-  const file = fileInput.files[0];
-  if (!file) return;
-
-  const text = await file.text();
-  const terms = text.split('\n').map(l => l.trim()).filter(Boolean);
-
-  if (!terms.length) {
-    feedback.textContent = 'File is empty.';
-    results.innerHTML = '';
-    return;
-  }
-
-  feedback.textContent = `Searching ${terms.length} title${terms.length > 1 ? 's' : ''}…`;
+  stopSimulation();
   results.innerHTML = '';
+  document.getElementById('connections-svg').innerHTML = '';
+  document.getElementById('clusters-svg').innerHTML = '';
+  document.getElementById('labels-svg').innerHTML = '';
+  connections = [];
+  clusterPolygons = [];
+  lineConnMap = new Map();
+  clearHighlights();
+  mediaStore = [];
+  document.getElementById('stats').innerHTML = '';
+  feedback.textContent = '';
 
   try {
-    const resultList = await fetchBatchWithSplit(terms);
-    const found = resultList.filter(r => r.media);
-    if (!found.length) {
-      feedback.textContent = 'Invalid title in list.';
+    let mediaArray;
+    if (inputMode === 'local') {
+      const file = fileInput.files[0];
+      if (!file) return;
+      const text = await file.text();
+      const terms = text.split('\n').map(l => l.trim()).filter(Boolean);
+      if (!terms.length) { feedback.textContent = 'File is empty.'; return; }
+      feedback.textContent = `Searching ${terms.length} title${terms.length > 1 ? 's' : ''}…`;
+      const resultList = await fetchBatchWithSplit(terms);
+      const found = resultList.filter(r => r.media);
+      if (!found.length) { feedback.textContent = 'Invalid title in list.'; return; }
+      mediaArray = found.map(r => r.media);
+    } else if (inputMode === 'popular') {
+      feedback.textContent = `Fetching top ${popularCount} popular anime…`;
+      mediaArray = await fetchPopular(popularCount);
+    } else if (inputMode === 'profile') {
+      const userName = document.getElementById('profile-username').value.trim();
+      if (!userName) return;
+      feedback.textContent = `Fetching anime list for ${userName}…`;
+      mediaArray = await fetchProfile(userName);
+      if (!mediaArray.length) { feedback.textContent = 'No anime found in list.'; return; }
+    } else {
       return;
     }
     feedback.textContent = '';
-    mediaStore = found.map(r => r.media);
-    const maxTags = Math.max(...mediaStore.map(m => m.tags.length));
-    countSlider.max = maxTags;
-    if (relevanceCount > maxTags) { relevanceCount = maxTags; countSlider.value = maxTags; countVal.textContent = maxTags; }
-    results.innerHTML = found.map((r, i) => renderCircle(r, i)).join('');
-    stopSimulation();
-    initSimulation(found.length);
-    buildSprings(found);
-    drawConnections();
-    drawClusters();
-    updateStats();
-    updateSimDOM();
-    startSimulation();
+    displayResults(mediaArray);
   } catch (err) {
     results.innerHTML = '';
     if (err instanceof RateLimitError) {

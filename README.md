@@ -25,6 +25,7 @@ Then:
 7. The **left sidebar** shows total anime and connection counts, plus a bar chart of selection items sorted by how many connections they appear in. **Hover** a bar to highlight all connections, circles, and the matching cluster polygon.
 8. **Cluster polygons** are drawn around groups of anime sharing a selection item. **Hover** a polygon to highlight it and its connections. Labels sit outside the polygon border, placed to avoid overlapping other labels.
 9. The controls in the **right sidebar** can be used to change selection criteria for connections and clusters, such as community acceptance of a tag or number of connections in a cluster.
+10. Use the **Visuals** checkboxes in the right sidebar to toggle rendering of connections, anime covers, cluster polygons, and cluster labels independently.
 
 <img width="1918" height="868" alt="image" src="https://github.com/user-attachments/assets/4a3e5826-3085-4b39-9267-859cf273e081" />
 

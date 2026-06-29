@@ -80,6 +80,19 @@ For each selection item (tag/genre) that appears in at least `clusterMin` connec
 
 The `document` `mousemove` fallback returns early when cursor is over `.sidebar-left`, preventing the per-frame `clearHighlights()` from erasing stat-hover highlights.
 
+## Visuals toggles
+
+Four checkboxes in right sidebar "Visuals" section. Each hides/shows a layer:
+
+| Checkbox | Effect |
+|----------|--------|
+| Connections | `#connections-svg` `display: none` |
+| Anime covers | Toggles `.hide-covers` on `#results`; CSS rule `.hide-covers .anime-circle img { display: none }` hides images while circles remain |
+| Clusters | `#clusters-svg` `display: none` |
+| Labels | `#labels-svg` `display: none` |
+
+All checked by default. Changes take effect immediately.
+
 ## Data source — AniList GraphQL API
 
 Endpoint: `https://graphql.anilist.co` (public, no auth required for read queries).

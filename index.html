@@ -20,13 +20,43 @@
           <section id="results"></section>
         </main>
         <aside class="sidebar-right">
-          <label class="file-label">
-            Import anime list
-            <input id="file-input" type="file" accept=".txt" />
-            <span class="file-hint">One title per line</span>
-          </label>
+          <div class="settings">
+            <p class="label">Input</p>
+            <div class="mode-switch">
+              <button class="mode-btn input-btn active" data-input="local">Local</button>
+              <button class="mode-btn input-btn" data-input="popular">Popular</button>
+              <button class="mode-btn input-btn" data-input="profile">Profile</button>
+            </div>
+            <div id="input-local" class="setting-panel">
+              <label class="file-label">
+                Import anime list
+                <input id="file-input" type="file" accept=".txt" />
+                <span class="file-hint">One title per line</span>
+              </label>
+            </div>
+            <div id="input-popular" class="setting-panel" style="display:none">
+              <div class="mode-switch" style="flex-wrap:wrap">
+                <button class="mode-btn popular-btn active" data-count="10">Top 10</button>
+                <button class="mode-btn popular-btn" data-count="50">Top 50</button>
+                <button class="mode-btn popular-btn" data-count="100">Top 100</button>
+                <button class="mode-btn popular-btn" data-count="200">Top 200</button>
+                <button class="mode-btn popular-btn" data-count="300">Top 300</button>
+              </div>
+            </div>
+            <div id="input-profile" class="setting-panel" style="display:none">
+              <input id="profile-username" type="text" placeholder="AniList username" class="text-input" />
+              <span class="file-hint">Profile must be public</span>
+            </div>
+          </div>
           <button id="search-btn" type="button" disabled>Search</button>
           <p id="feedback" class="feedback"></p>
+          <div class="settings">
+            <p class="label">Visuals</p>
+            <label class="vis-row"><input type="checkbox" id="vis-connections" checked> Connections</label>
+            <label class="vis-row"><input type="checkbox" id="vis-covers" checked> Anime covers</label>
+            <label class="vis-row"><input type="checkbox" id="vis-clusters" checked> Clusters</label>
+            <label class="vis-row"><input type="checkbox" id="vis-labels" checked> Labels</label>
+          </div>
           <div class="settings">
             <p class="label">Connections</p>
             <div class="setting-panel">

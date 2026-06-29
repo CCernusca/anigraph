@@ -52,10 +52,19 @@
               <input type="range" id="top-pct-slider" min="1" max="100" value="25" />
             </div>
           </div>
+          <div class="settings">
+            <p class="label">Clusters</p>
+            <div class="setting-panel">
+              <div class="slider-row"><span>Min size</span><span id="cluster-min-val">3</span></div>
+              <input type="range" id="cluster-min-slider" min="1" max="99" value="3" />
+            </div>
+          </div>
         </aside>
       </div>
     </div>
+    <svg id="clusters-svg"></svg>
     <svg id="connections-svg"></svg>
+    <svg id="labels-svg"></svg>
     <div id="popup" class="anime-popup"></div>
     <script src="js/main.js"></script>
   </body>

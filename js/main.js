@@ -273,6 +273,7 @@ function updateSimDOM() {
     conn.line.setAttribute('x2', conn.x2);
     conn.line.setAttribute('y2', conn.y2);
   });
+  updateClusterDOM();
 }
 
 function startSimulation() {
@@ -287,6 +288,165 @@ function startSimulation() {
 
 function stopSimulation() {
   if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+}
+
+function convexHull(pts) {
+  if (pts.length <= 1) return pts.slice();
+  const sorted = [...pts].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (O, A, B) => (A[0]-O[0])*(B[1]-O[1]) - (A[1]-O[1])*(B[0]-O[0]);
+  const lower = [], upper = [];
+  for (const p of sorted) {
+    while (lower.length >= 2 && cross(lower[lower.length-2], lower[lower.length-1], p) <= 0) lower.pop();
+    lower.push(p);
+  }
+  for (let i = sorted.length-1; i >= 0; i--) {
+    const p = sorted[i];
+    while (upper.length >= 2 && cross(upper[upper.length-2], upper[upper.length-1], p) <= 0) upper.pop();
+    upper.push(p);
+  }
+  lower.pop(); upper.pop();
+  return [...lower, ...upper];
+}
+
+function circleHull(screenPts, r) {
+  const samples = [];
+  for (const [x, y] of screenPts) {
+    for (let k = 0; k < 24; k++) {
+      const a = (k / 24) * Math.PI * 2;
+      samples.push([x + Math.cos(a) * r, y + Math.sin(a) * r]);
+    }
+  }
+  return convexHull(samples);
+}
+
+function pointInPolygon(px, py, hull) {
+  let inside = false;
+  for (let i = 0, j = hull.length - 1; i < hull.length; j = i++) {
+    const [xi, yi] = hull[i], [xj, yj] = hull[j];
+    if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+function tagHue(name) {
+  let h = 0;
+  for (const c of name) h = (h*31 + c.charCodeAt(0)) & 0xffff;
+  return h % 360;
+}
+
+let clusterPolygons = [];
+
+function drawClusters() {
+  const svg = document.getElementById('clusters-svg');
+  const labelsSvg = document.getElementById('labels-svg');
+  svg.innerHTML = '';
+  labelsSvg.innerHTML = '';
+  clusterPolygons = [];
+  if (!mediaStore.length) return;
+  const tagCounts = new Map();
+  for (const { shared } of simSprings) {
+    for (const name of shared) tagCounts.set(name, (tagCounts.get(name) || 0) + 1);
+  }
+  for (const [tag, count] of tagCounts) {
+    if (count < clusterMin) continue;
+    const indices = mediaStore.reduce((acc, media, i) => {
+      if (getSelection(media).some(s => s.name === tag)) acc.push(i);
+      return acc;
+    }, []);
+    if (indices.length < 2) continue;
+    const hue = tagHue(tag);
+    const baseFill = `hsla(${hue},60%,60%,0.07)`;
+    const activeFill = `hsla(${hue},70%,70%,0.22)`;
+    const baseStroke = `hsla(${hue},70%,70%,0.3)`;
+    const activeStroke = `hsla(${hue},80%,85%,0.9)`;
+    const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    poly.setAttribute('fill', baseFill);
+    poly.setAttribute('stroke', baseStroke);
+    poly.setAttribute('stroke-width', '1.5');
+    poly.style.pointerEvents = 'fill';
+    svg.appendChild(poly);
+    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    label.textContent = tag;
+    label.setAttribute('fill', `hsla(${hue},70%,80%,0.9)`);
+    label.setAttribute('font-size', '11');
+    label.setAttribute('font-family', 'sans-serif');
+    label.setAttribute('text-anchor', 'middle');
+    label.setAttribute('stroke', '#111');
+    label.setAttribute('stroke-width', '3');
+    label.setAttribute('paint-order', 'stroke');
+    labelsSvg.appendChild(label);
+    const entry = { indices, poly, label, tag, baseFill, activeFill, baseStroke, activeStroke };
+    clusterPolygons.push(entry);
+    poly.addEventListener('mouseover', () => {
+      entry.poly.setAttribute('fill', entry.activeFill);
+      entry.poly.setAttribute('stroke', entry.activeStroke);
+      clearHighlights();
+      const circleEls = document.querySelectorAll('.anime-circle');
+      for (const conn of connections) {
+        if (conn.shared.includes(entry.tag)) {
+          conn.line.setAttribute('stroke', conn.activeStroke);
+          highlightedLines.push(conn.line);
+          [conn.i, conn.j].forEach(idx => {
+            const el = circleEls[idx];
+            if (el && !el.classList.contains('highlighted')) {
+              el.classList.add('highlighted');
+              highlightedCircles.push(el);
+            }
+          });
+        }
+      }
+    });
+    poly.addEventListener('mouseout', () => {
+      entry.poly.setAttribute('fill', entry.baseFill);
+      entry.poly.setAttribute('stroke', entry.baseStroke);
+      clearHighlights();
+    });
+  }
+}
+
+function updateClusterDOM() {
+  const rect = results.getBoundingClientRect();
+  const vcx = rect.width/2, vcy = rect.height/2;
+  const r = (CIRCLE_R + 15) * camZoom;
+
+  const hulls = clusterPolygons.map(({ indices }) => {
+    const pts = indices.map(i => [
+      (simNodes[i].x - camX) * camZoom + vcx + rect.left,
+      (simNodes[i].y - camY) * camZoom + vcy + rect.top,
+    ]);
+    return circleHull(pts, r);
+  });
+
+  const placedLabels = [];
+  for (let k = 0; k < clusterPolygons.length; k++) {
+    const { poly, label } = clusterPolygons[k];
+    const hull = hulls[k];
+    if (hull.length < 3) { poly.setAttribute('points', ''); label.setAttribute('x', -9999); continue; }
+    poly.setAttribute('points', hull.map(p => p.join(',')).join(' '));
+
+    const step = Math.max(1, Math.floor(hull.length / 12));
+    const candidates = [];
+    for (let i = 0; i < hull.length; i += step) candidates.push(hull[i]);
+
+    const free = candidates.filter(([px, py]) =>
+      !hulls.some((h, j) => j !== k && h.length >= 3 && pointInPolygon(px, py, h))
+    );
+    const pool = free.length ? free : candidates;
+
+    const minDistTo = ([px, py]) => placedLabels.length
+      ? Math.min(...placedLabels.map(([lx, ly]) => Math.hypot(px - lx, py - ly)))
+      : Infinity;
+
+    const best = pool.reduce((m, p) => {
+      const dm = minDistTo(p), mm = minDistTo(m);
+      if (Math.abs(dm - mm) > 1) return dm > mm ? p : m;
+      return p[1] < m[1] ? p : m;
+    }, pool[0]);
+
+    label.setAttribute('x', best[0]);
+    label.setAttribute('y', best[1] - 5);
+    placedLabels.push([best[0], best[1] - 5]);
+  }
 }
 
 function drawConnections() {
@@ -314,6 +474,9 @@ const feedback = document.getElementById('feedback');
 const popup = document.getElementById('popup');
 const springSlider = document.getElementById('spring-slider');
 const springVal = document.getElementById('spring-val');
+const clusterMinSlider = document.getElementById('cluster-min-slider');
+const clusterMinVal = document.getElementById('cluster-min-val');
+let clusterMin = 3;
 const percentSlider = document.getElementById('percent-slider');
 const countSlider = document.getElementById('count-slider');
 const topPctSlider = document.getElementById('top-pct-slider');
@@ -388,6 +551,7 @@ document.addEventListener('mousemove', (e) => {
   }
 
   if (e.target.closest('.sidebar-left')) return;
+  if (e.target.closest('#clusters-svg')) return;
   clearHighlights();
   popup.style.display = 'none';
 });
@@ -404,13 +568,16 @@ function updateStats() {
   }
   const sorted = [...tagCounts.entries()].sort((a, b) => b[1] - a[1]);
   const maxCount = sorted.length > 0 ? sorted[0][1] : 1;
+  clusterMinSlider.max = maxCount;
+  if (clusterMin > maxCount) { clusterMin = maxCount; clusterMinSlider.value = maxCount; clusterMinVal.textContent = maxCount; }
+  const visible = sorted.filter(([, count]) => count >= clusterMin);
   statsEl.innerHTML = `<p class="label">Overview</p>
   <div class="stat-counts">
     <span>${n} anime</span>
     <span>${totalConns} connection${totalConns !== 1 ? 's' : ''}</span>
   </div>
-  <p class="label">By tag</p>
-  <div class="stat-bars">${sorted.map(([name, count]) => {
+  <p class="label">Clusters</p>
+  <div class="stat-bars">${visible.map(([name, count]) => {
     const pct = totalConns > 0 ? Math.round(count / totalConns * 100) : 0;
     const barW = (count / maxCount * 100).toFixed(1);
     return `<div class="stat-bar-row" data-tag="${name.replace(/"/g, '&quot;')}">
@@ -427,6 +594,7 @@ function redrawIfLoaded() {
   popup.style.display = 'none';
   buildSprings(mediaStore.map(media => ({ media })));
   drawConnections();
+  drawClusters();
   updateStats();
 }
 
@@ -445,6 +613,13 @@ document.querySelectorAll('.mode-btn').forEach(btn => {
 springSlider.addEventListener('input', () => {
   springK = parseInt(springSlider.value) / 100;
   springVal.textContent = springSlider.value;
+});
+
+clusterMinSlider.addEventListener('input', () => {
+  clusterMin = parseInt(clusterMinSlider.value);
+  clusterMinVal.textContent = clusterMin;
+  drawClusters();
+  updateStats();
 });
 
 percentSlider.addEventListener('input', () => {
@@ -502,6 +677,7 @@ document.getElementById('stats').addEventListener('mouseover', (e) => {
   const row = e.target.closest('.stat-bar-row');
   if (!row) return;
   const tag = row.dataset.tag;
+  clusterPolygons.forEach(c => { c.poly.setAttribute('fill', c.baseFill); c.poly.setAttribute('stroke', c.baseStroke); });
   clearHighlights();
   const circleEls = document.querySelectorAll('.anime-circle');
   for (const conn of connections) {
@@ -517,9 +693,18 @@ document.getElementById('stats').addEventListener('mouseover', (e) => {
       });
     }
   }
+  const cluster = clusterPolygons.find(c => c.tag === tag);
+  if (cluster) {
+    cluster.poly.setAttribute('fill', cluster.activeFill);
+    cluster.poly.setAttribute('stroke', cluster.activeStroke);
+  }
 });
 
 document.getElementById('stats').addEventListener('mouseleave', () => {
+  clusterPolygons.forEach(c => {
+    c.poly.setAttribute('fill', c.baseFill);
+    c.poly.setAttribute('stroke', c.baseStroke);
+  });
   clearHighlights();
 });
 
@@ -556,6 +741,7 @@ searchBtn.addEventListener('click', async () => {
     initSimulation(found.length);
     buildSprings(found);
     drawConnections();
+    drawClusters();
     updateStats();
     updateSimDOM();
     startSimulation();

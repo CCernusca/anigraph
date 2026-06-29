@@ -14,16 +14,19 @@ Open `index.html` in a browser — no build step required.
 4. **Hover** a circle to see a popup with genres and community-rated tags; its connection lines highlight.
 5. **Hover** a connection line (in the center area) to see shared selection items; its two endpoint circles highlight.
 6. Click **↗** in the popup to open the anime's AniList page.
-7. The **left sidebar** shows total anime and connection counts, plus a bar chart of selection items sorted by how many connections they appear in. **Hover** a bar to highlight all connections and circles sharing that item.
+7. The **left sidebar** shows total anime and connection counts, plus a bar chart of selection items sorted by how many connections they appear in. **Hover** a bar to highlight all connections, circles, and the matching cluster polygon.
+8. **Cluster polygons** are drawn around groups of anime sharing a selection item. **Hover** a polygon to highlight it and its connections. Labels sit outside the polygon border, placed to avoid overlapping other labels.
 
-Anime sharing selection items are connected by lines. Spring stiffness and line opacity scale with connection strength (relative to the strongest connection). Configure the **Selection** mode in the sidebar:
+Anime sharing selection items are connected by lines. Spring stiffness and line opacity scale with connection strength (relative to the strongest connection). Configure physics and selection in the right sidebar:
 
-| Mode | Behaviour |
-|------|-----------|
+| Setting | Effect |
+|---------|--------|
+| Spring strength | Controls spring force in the physics simulation |
 | % cutoff | Tags above a minimum acceptance % |
 | Top N | Top N tags by acceptance (slider max = tag count in data) |
 | Top % | Top fraction of tags by acceptance |
 | Genres | All genres (connections and highlights based on genres) |
+| Min cluster size | Minimum connections a tag needs to appear as a cluster polygon and stat bar |
 
 Unmatched titles are silently omitted. Feedback (errors, rate limits) appears below the search button.
 

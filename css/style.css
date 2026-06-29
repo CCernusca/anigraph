@@ -303,6 +303,26 @@ body {
   border: 1px solid #3a6a3a;
 }
 
+#clusters-svg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 4;
+}
+
+#labels-svg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 7;
+}
+
 #connections-svg {
   position: fixed;
   top: 0;

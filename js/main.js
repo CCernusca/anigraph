@@ -371,15 +371,17 @@ document.addEventListener('mousemove', (e) => {
     return;
   }
 
-  for (const conn of connections) {
-    if (distToSegment(x, y, conn.x1, conn.y1, conn.x2, conn.y2) <= LINE_HIT_DIST) {
-      highlightCircles(conn.i, conn.j);
-      conn.line.setAttribute('stroke', conn.activeStroke);
-      highlightedLines.push(conn.line);
-      popup.innerHTML = buildConnectionPopup(conn.shared);
-      popup.style.display = 'block';
-      positionPopup((conn.x1 + conn.x2) / 2 + MARGIN, (conn.y1 + conn.y2) / 2);
-      return;
+  if (e.target.closest('.center')) {
+    for (const conn of connections) {
+      if (distToSegment(x, y, conn.x1, conn.y1, conn.x2, conn.y2) <= LINE_HIT_DIST) {
+        highlightCircles(conn.i, conn.j);
+        conn.line.setAttribute('stroke', conn.activeStroke);
+        highlightedLines.push(conn.line);
+        popup.innerHTML = buildConnectionPopup(conn.shared);
+        popup.style.display = 'block';
+        positionPopup((conn.x1 + conn.x2) / 2 + MARGIN, (conn.y1 + conn.y2) / 2);
+        return;
+      }
     }
   }
 
@@ -427,6 +429,7 @@ topPctSlider.addEventListener('input', () => {
 
 document.addEventListener('mousedown', (e) => {
   if (e.target.closest('.anime-circle') || e.target.closest('.anime-popup')) return;
+  if (!e.target.closest('.center')) return;
   isPanning = true;
   panStartX = e.clientX; panStartY = e.clientY;
   panStartCamX = camX; panStartCamY = camY;
@@ -441,6 +444,7 @@ document.addEventListener('mouseup', () => {
 
 document.addEventListener('wheel', (e) => {
   if (e.target.closest('.anime-popup')) return;
+  if (!e.target.closest('.center')) return;
   e.preventDefault();
   const rect = results.getBoundingClientRect();
   const vcx = rect.left + rect.width / 2;

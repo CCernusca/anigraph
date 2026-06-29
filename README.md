@@ -1,8 +1,8 @@
-# anigraph
+# <img src="favicon.svg" height="128" align="middle" alt="anigraph favicon" style="margin-right: 1rem;" /> anigraph
 
 A little webapp for visualising information and statistics about anime.
 
-<img width="1367" height="797" alt="image" src="https://github.com/user-attachments/assets/de7712c8-eaa7-4f5e-8a13-eefef23e458d" />
+<img width="1367" height="797" alt="anigraph screenshot" src="https://github.com/user-attachments/assets/de7712c8-eaa7-4f5e-8a13-eefef23e458d" />
 
 *A graph of shared tags among the top 100 popular anime on AniList with highlighted clusters*
 
@@ -46,10 +46,15 @@ Anime sharing selection items are connected by lines. Spring stiffness and line 
 
 Unmatched titles are silently omitted. Feedback (errors, rate limits) appears below the search button.
 
+## Favicon
+
+`favicon.svg` — inline SVG depicting "a" and "g" overlaid as one node-graph.
+
 ## Project structure
 
 ```
 index.html      entry point
+favicon.svg     browser tab icon
 css/style.css   global styles
 js/main.js      application logic
 ```

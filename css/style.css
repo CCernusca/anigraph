@@ -489,7 +489,7 @@ input[type="range"] {
 }
 
 .vis-row input[type="checkbox"] {
-  accent-color: #fff;
+  accent-color: #aaa;
   cursor: pointer;
 }
 
@@ -543,6 +543,10 @@ input[type="range"] {
     order: 4;
     flex: 0 0 100%;
     width: 100%;
+  }
+
+  .center {
+    overflow: hidden;
   }
 
   /* Always use collapsed column widths */

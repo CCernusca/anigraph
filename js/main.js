@@ -1026,22 +1026,51 @@ searchBtn.addEventListener('click', async () => {
   }
 });
 
+const mobileQuery = window.matchMedia('(max-width: 640px)');
+
+function resetSidebarState() {
+  const leftSidebar = document.querySelector('.sidebar-left');
+  const rightSidebar = document.querySelector('.sidebar-right');
+  const area = document.querySelector('.content-area');
+  leftSidebar.classList.remove('collapsed', 'mobile-open');
+  rightSidebar.classList.remove('collapsed', 'mobile-open');
+  area.classList.remove('left-collapsed', 'right-collapsed');
+  document.getElementById('toggle-left').textContent = '◀';
+  document.getElementById('toggle-left').title = 'Collapse sidebar';
+  document.getElementById('toggle-right').textContent = '▶';
+  document.getElementById('toggle-right').title = 'Collapse sidebar';
+}
+
+mobileQuery.addEventListener('change', resetSidebarState);
+
 document.getElementById('toggle-left').addEventListener('click', () => {
   const sidebar = document.querySelector('.sidebar-left');
-  const area = document.querySelector('.content-area');
-  const collapsed = sidebar.classList.toggle('collapsed');
-  area.classList.toggle('left-collapsed', collapsed);
-  document.getElementById('toggle-left').textContent = collapsed ? '▶' : '◀';
-  document.getElementById('toggle-left').title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+  const btn = document.getElementById('toggle-left');
+  if (mobileQuery.matches) {
+    const open = sidebar.classList.toggle('mobile-open');
+    btn.textContent = open ? '◀' : '▶';
+    btn.title = open ? 'Collapse sidebar' : 'Expand sidebar';
+  } else {
+    const collapsed = sidebar.classList.toggle('collapsed');
+    document.querySelector('.content-area').classList.toggle('left-collapsed', collapsed);
+    btn.textContent = collapsed ? '▶' : '◀';
+    btn.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+  }
 });
 
 document.getElementById('toggle-right').addEventListener('click', () => {
   const sidebar = document.querySelector('.sidebar-right');
-  const area = document.querySelector('.content-area');
-  const collapsed = sidebar.classList.toggle('collapsed');
-  area.classList.toggle('right-collapsed', collapsed);
-  document.getElementById('toggle-right').textContent = collapsed ? '◀' : '▶';
-  document.getElementById('toggle-right').title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+  const btn = document.getElementById('toggle-right');
+  if (mobileQuery.matches) {
+    const open = sidebar.classList.toggle('mobile-open');
+    btn.textContent = open ? '▶' : '◀';
+    btn.title = open ? 'Collapse sidebar' : 'Expand sidebar';
+  } else {
+    const collapsed = sidebar.classList.toggle('collapsed');
+    document.querySelector('.content-area').classList.toggle('right-collapsed', collapsed);
+    btn.textContent = collapsed ? '◀' : '▶';
+    btn.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+  }
 });
 
 updateStats();

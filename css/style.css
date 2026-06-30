@@ -2,6 +2,11 @@
   box-sizing: border-box;
 }
 
+html {
+  overflow: hidden;
+  height: 100%;
+}
+
 :root {
   --bg: #111;
   --sep: 1px solid #fff;
@@ -16,7 +21,7 @@ body {
   background: var(--bg);
   color: var(--fg);
   font-family: sans-serif;
-  height: 100vh;
+  height: 100%;
   overflow: hidden;
 }
 
@@ -25,7 +30,7 @@ body {
 .layout {
   display: grid;
   grid-template-rows: var(--topbar-h) 1fr;
-  height: 100vh;
+  height: 100%;
 }
 
 .topbar {

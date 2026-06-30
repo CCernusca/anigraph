@@ -46,7 +46,7 @@ async function fetchMediaBatch(terms) {
   return terms.map((term, i) => ({ term, media: data[`m${i}`] ?? null }));
 }
 
-async function fetchProfile(userName) {
+async function fetchProfile(userName, statuses) {
   const listType = mediaType === 'ANIME' ? 'ANIME' : 'MANGA';
   const res = await fetch(ANILIST_URL, {
     method: 'POST',
@@ -54,6 +54,7 @@ async function fetchProfile(userName) {
     body: JSON.stringify({ query: `query ($userName: String) {
       MediaListCollection(userName: $userName, type: ${listType}) {
         lists {
+          status
           entries {
             media {
               id title { romaji english } coverImage { medium color } genres tags { name rank } format
@@ -71,7 +72,9 @@ async function fetchProfile(userName) {
   if (!data) throw new Error(errors?.[0]?.message ?? `HTTP ${res.status}`);
   const collection = data.MediaListCollection;
   if (!collection) throw new Error('User not found or list is private.');
-  let items = collection.lists.flatMap(l => l.entries.map(e => e.media));
+  let items = collection.lists
+    .filter(l => statuses.has(l.status))
+    .flatMap(l => l.entries.map(e => e.media));
   if (mediaType === 'NOVEL') items = items.filter(m => m.format === 'NOVEL');
   return items;
 }
@@ -901,8 +904,12 @@ searchBtn.addEventListener('click', async () => {
     } else if (inputMode === 'profile') {
       const userName = document.getElementById('profile-username').value.trim();
       if (!userName) return;
+      const statuses = new Set(
+        [...document.querySelectorAll('.status-check:checked')].map(cb => cb.value)
+      );
+      if (!statuses.size) { feedback.textContent = 'Select at least one status.'; return; }
       feedback.textContent = `Fetching ${mediaType.toLowerCase()} list for ${userName}…`;
-      mediaArray = await fetchProfile(userName);
+      mediaArray = await fetchProfile(userName, statuses);
       if (!mediaArray.length) { feedback.textContent = `No ${mediaType.toLowerCase()} found in list.`; return; }
     } else {
       return;

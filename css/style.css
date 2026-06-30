@@ -47,7 +47,7 @@ body {
 }
 
 .site-icon {
-  height: 2rem;
+  height: 50px;
   width: auto;
 }
 
@@ -475,4 +475,11 @@ input[type="range"] {
 
 .text-input:focus {
   border-color: #fff;
+}
+
+.status-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-top: 0.4rem;
 }

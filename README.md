@@ -18,7 +18,7 @@ Then:
 
 1. Use the **media type buttons** in the topbar to select Anime, Manga, or Novel. All input modes and features work for each type.
    Use the **filter bar** (topbar, between type buttons and AniList link) to highlight matching circles by title — non-matching entries dim while typing.
-2. Use the **right sidebar** to import a `.txt` file (one title per line) and click **Search**.
+2. Use the **right sidebar** to choose an input mode: **Local** (import a `.txt` file, one title per line), **Popular** (top N by popularity), or **Profile** (AniList username). In Profile mode, use the status checkboxes to select which list statuses to include (Current, Completed, Paused, Dropped, Planning, Repeating — all checked by default). Click **Search**.
 3. Matching entries appear as **circles** in a live physics simulation — nodes repel each other, shared-selection connections act as springs.
 4. **Drag** the center area to pan. **Scroll** over the center area to zoom.
 5. **Hover** a circle to see a popup with genres and community-rated tags; its connection lines highlight.
@@ -32,6 +32,10 @@ Then:
 <img width="1918" height="868" alt="image" src="https://github.com/user-attachments/assets/4a3e5826-3085-4b39-9267-859cf273e081" />
 
 *An image of the full interface of anigraph*
+
+<img width="1372" height="867" alt="image" src="https://github.com/user-attachments/assets/801d91a4-6cf4-49ef-882b-4202e7c3a241" />
+
+*Top 100 Anime being filtered for "Attack on Titan"*
 
 Anime sharing selection items are connected by lines. Spring stiffness and line opacity scale with connection strength (relative to the strongest connection). Configure physics and selection in the right sidebar:
 

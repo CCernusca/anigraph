@@ -82,9 +82,11 @@ For each selection item (tag/genre) that appears in at least `clusterMin` connec
 
 **Counts:** anime count and connection count.
 
-**Bar chart:** one row per unique selection item with `count >= clusterMin`. Rows sorted by connection count descending. Bar width scales to the item with the most connections (relative). Each row shows `count · pct%` where `pct = round(count / totalConnections × 100)`. `updateStats()` also updates `clusterMinSlider.max` to the current max tag count and clamps `clusterMin` if needed.
+**Bar chart:** one row per unique selection item with `count >= clusterMin`. Rows sorted by connection count descending. Bar width scales to the item with the most connections (relative). Each row shows `count · pct%` where `pct = round(count / totalConnections × 100)`. `updateStats()` always renders the Overview and Clusters sections (even before any search — shows "0 anime, 0 connections"). `clusterMinSlider.max` is updated only when data is present. When no clusters meet the `clusterMin` threshold, a "No clusters detected." note renders instead of the bar chart. Called on page load and on each new search (after `mediaStore` is cleared, before fetch).
 
 **Clusters section (right sidebar):** "Min size" slider controls `clusterMin` (default 3). Changing it calls `drawClusters()` + `updateStats()` to simultaneously update polygons and the stat bar chart.
+
+**Right sidebar sticky headers:** `.sidebar-right .label` uses `position: sticky; top: 0; background: var(--bg); z-index: 1` so section titles (Input, Visuals, Connections, Clusters) remain visible while scrolling the sidebar.
 
 `data-tag` attribute on each row stores the item name. Delegated `mouseover` on `#stats` reads `row.dataset.tag`, resets all cluster polygons to base, then highlights matching lines + circles + the matching cluster polygon. `mouseleave` restores all polygons and clears highlights.
 

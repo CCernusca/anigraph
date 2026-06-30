@@ -111,6 +111,8 @@ Affects all fetch paths:
 | Popular | `type: ANIME` | `type: MANGA` | `type: MANGA, format: NOVEL` |
 | Profile | `MediaListCollection(type: ANIME)` | `MediaListCollection(type: MANGA)` | `MediaListCollection(type: MANGA)` + client filter `format === 'NOVEL'` |
 
+**Profile status filter:** Six checkboxes in `#input-profile` (Current, Completed, Paused, Dropped, Planning, Repeating — all checked by default). On search, checked values are collected into a `Set<string>` of AniList status enums (`CURRENT`, `COMPLETED`, `PAUSED`, `DROPPED`, `PLANNING`, `REPEATING`). `fetchProfile` receives this set and filters `collection.lists` by `l.status` before flattening entries. The query requests `status` on each list object. If no checkboxes are checked, search is blocked with a feedback message.
+
 AniList popup link uses `/anime/${id}` for ANIME, `/manga/${id}` for MANGA and NOVEL (AniList stores novels under `/manga/`).
 
 Stats label ("N anime") reflects the active media type. Feedback strings likewise. All graph features (clusters, connections, physics, visuals) are media-type-agnostic — same code path after fetch.

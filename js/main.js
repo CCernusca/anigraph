@@ -744,22 +744,48 @@ document.getElementById('vis-labels').addEventListener('change', e => {
 });
 
 document.getElementById('graph-search').addEventListener('input', e => {
-  const q = e.target.value.trim().toLowerCase();
+  const raw = e.target.value.trim();
   const circleEls = document.querySelectorAll('.anime-circle');
-  if (!q) {
+  if (!raw) {
     results.classList.remove('filter-active');
     circleEls.forEach(el => el.classList.remove('filter-match'));
     return;
   }
+  const parts = raw.split(/\s+/).filter(Boolean);
+  const tagFilters = parts
+    .filter(p => p.startsWith('#'))
+    .map(p => {
+      const raw = p.slice(1);
+      const colon = raw.lastIndexOf(':');
+      if (colon > 0) {
+        const minRank = parseInt(raw.slice(colon + 1), 10);
+        if (!isNaN(minRank)) {
+          return { name: raw.slice(0, colon).replace(/_/g, ' ').toLowerCase(), minRank };
+        }
+      }
+      return { name: raw.replace(/_/g, ' ').toLowerCase(), minRank: null };
+    });
+  const titleQuery = parts.filter(p => !p.startsWith('#')).join(' ').toLowerCase();
+
   results.classList.add('filter-active');
   circleEls.forEach(el => {
     const idx = parseInt(el.dataset.index);
     const media = mediaStore[idx];
-    const match = media && (
-      (media.title.romaji ?? '').toLowerCase().includes(q) ||
-      (media.title.english ?? '').toLowerCase().includes(q)
-    );
-    el.classList.toggle('filter-match', !!match);
+    if (!media) { el.classList.remove('filter-match'); return; }
+
+    const titleMatch = !titleQuery ||
+      (media.title.romaji ?? '').toLowerCase().includes(titleQuery) ||
+      (media.title.english ?? '').toLowerCase().includes(titleQuery);
+
+    const tagsMatch = tagFilters.every(({ name, minRank }) => {
+      const tagHit = media.tags.some(t =>
+        t.name.toLowerCase().includes(name) && (minRank === null || t.rank >= minRank)
+      );
+      if (tagHit) return true;
+      return minRank === null && media.genres.some(g => g.toLowerCase().includes(name));
+    });
+
+    el.classList.toggle('filter-match', titleMatch && tagsMatch);
   });
 });
 

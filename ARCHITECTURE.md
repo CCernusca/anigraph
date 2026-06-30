@@ -92,10 +92,16 @@ The `document` `mousemove` fallback returns early when cursor is over `.sidebar-
 
 ## Graph search filter
 
-`#graph-search` text input in topbar. On `input` event: if query non-empty, adds `.filter-active` to `#results` and `.filter-match` to each `.anime-circle` whose `mediaStore[idx]` title (romaji or english) includes the query (case-insensitive). CSS:
+`#graph-search` text input in topbar. On `input` event: if query non-empty, adds `.filter-active` to `#results` and `.filter-match` to each `.anime-circle` that matches all terms. CSS:
 
 - `.filter-active .anime-circle` → `opacity: 0.15`
 - `.filter-active .anime-circle.filter-match` → `opacity: 1`, `border-width: 7px`
+
+**Query parsing:** Raw input split on whitespace. Tokens starting with `#` are tag filters — `#` stripped, underscores replaced with spaces, lowercased. Optional `:N` suffix (last colon in token) sets a minimum rank threshold (`minRank`); parsed as integer, ignored if not a valid number. Remaining tokens rejoined as a single title query string.
+
+**Match logic (all must pass — AND):**
+- *Title:* `titleQuery` non-empty → romaji or english title must include it (case-insensitive). Vacuously true if no non-`#` tokens.
+- *Tags:* Each `{ name, minRank }` filter: a `media.tags` entry whose lowercased name includes `name` and whose `rank >= minRank` (or `minRank === null`) satisfies the filter. If no tag matches, falls back to `media.genres` substring match — only when `minRank === null` (rank threshold disables genre fallback).
 
 On clear: removes `.filter-active` + all `.filter-match`. Cleared automatically on new Search. Independent of hover highlights — both can coexist.
 

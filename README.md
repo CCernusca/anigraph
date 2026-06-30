@@ -17,7 +17,7 @@ Open `index.html` in a browser — no build step required.
 Then:
 
 1. Use the **media type buttons** in the topbar to select Anime, Manga, or Novel. All input modes and features work for each type.
-   Use the **filter bar** (topbar, between type buttons and AniList link) to highlight matching circles by title — non-matching entries dim while typing.
+   Use the **filter bar** (topbar, between type buttons and AniList link) to highlight matching circles — non-matching entries dim while typing. Supports combined queries: plain text matches titles, `#tag` matches tags or genres (case-insensitive, use `_` for spaces, e.g. `#slice_of_life`), `#tag:N` requires the tag to have community acceptance ≥ N% (e.g. `#action:70`). Multiple terms are ANDed — e.g. `naruto #action:80 #shounen` shows only entries whose title contains "naruto" and which have the "action" tag at ≥ 80% acceptance and the "shounen" genre/tag. A rank threshold on a tag token disables genre matching for that token.
 2. Use the **right sidebar** to choose an input mode: **Local** (import a `.txt` file, one title per line), **Popular** (top N by popularity), or **Profile** (AniList username). In Profile mode, use the status checkboxes to select which list statuses to include (Current, Completed, Paused, Dropped, Planning, Repeating — all checked by default). Click **Search**.
 3. Matching entries appear as **circles** in a live physics simulation — nodes repel each other, shared-selection connections act as springs.
 4. **Drag** the center area to pan. **Scroll** over the center area to zoom.

@@ -24,7 +24,7 @@ Then:
 5. **Hover** a circle to see a popup with genres and community-rated tags; its connection lines highlight.
 6. **Hover** a connection line (in the center area) to see shared selection items (tags or genres); its two endpoint circles highlight.
 7. Click **↗** in the popup to open the entry's AniList page.
-8. The **left sidebar** shows total entry and connection counts, plus a bar chart of selection items sorted by how many connections they appear in. **Hover** a bar to highlight all connections, circles, and the matching cluster polygon.
+8. The **left sidebar** shows total entry and connection counts, plus a bar chart of selection items sorted by how many connections they appear in. **Hover** a bar to highlight all connections, circles, and the matching cluster polygon. Both sidebars can be collapsed via the **◀ / ▶** toggle button at the top of each sidebar; click again to expand.
 9. **Cluster polygons** are drawn around groups sharing a selection item. **Hover** a polygon to highlight it and its connections. Labels sit outside the polygon border, placed to avoid overlapping other labels.
 10. The controls in the **right sidebar** can be used to change selection criteria for connections and clusters, such as community acceptance of a tag or number of connections in a cluster.
 11. Use the **Visuals** checkboxes in the right sidebar to toggle rendering of connections, covers, cluster polygons, and cluster labels independently.

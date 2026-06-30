@@ -951,3 +951,21 @@ searchBtn.addEventListener('click', async () => {
     }
   }
 });
+
+document.getElementById('toggle-left').addEventListener('click', () => {
+  const sidebar = document.querySelector('.sidebar-left');
+  const area = document.querySelector('.content-area');
+  const collapsed = sidebar.classList.toggle('collapsed');
+  area.classList.toggle('left-collapsed', collapsed);
+  document.getElementById('toggle-left').textContent = collapsed ? '▶' : '◀';
+  document.getElementById('toggle-left').title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+});
+
+document.getElementById('toggle-right').addEventListener('click', () => {
+  const sidebar = document.querySelector('.sidebar-right');
+  const area = document.querySelector('.content-area');
+  const collapsed = sidebar.classList.toggle('collapsed');
+  area.classList.toggle('right-collapsed', collapsed);
+  document.getElementById('toggle-right').textContent = collapsed ? '◀' : '▶';
+  document.getElementById('toggle-right').title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+});

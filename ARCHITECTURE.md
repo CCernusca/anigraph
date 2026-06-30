@@ -184,6 +184,17 @@ Constants: `SPRING_REST=130`, `REPEL_K=5000`, `CENTER_K=0.002`, `DRAG=0.82`. `sp
 
 Loop runs via `requestAnimationFrame`. Stopped/restarted on new search. Selection mode changes rebuild spring topology without resetting node positions.
 
+## Retractable sidebars
+
+Each sidebar has a `.sidebar-toggle` button as its first child. Clicking toggles `.collapsed` on the sidebar and `left-collapsed` / `right-collapsed` on `.content-area`.
+
+**Grid:** Three class variants on `.content-area` narrow the relevant column to `--sidebar-collapsed-w` (24px):
+- `.left-collapsed` → `24px 1fr 220px`
+- `.right-collapsed` → `220px 1fr 24px`
+- Both → `24px 1fr 24px`
+
+**Collapsed sidebar:** `padding:0`, `gap:0`, `overflow:hidden`. All direct children except `.sidebar-toggle` get `display:none`. The toggle button expands to fill the full 24×100% strip and acts as a clickable handle. Arrow flips: `◀`↔`▶` (left), `▶`↔`◀` (right).
+
 ## Z-index layering
 
 | Layer | z-index |

@@ -41,6 +41,14 @@ body {
 .site-title {
   margin: 0;
   font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.site-icon {
+  height: 50px;
+  width: auto;
 }
 
 .content-area {
@@ -131,6 +139,35 @@ body {
   overflow-y: auto;
   min-height: 0;
   background: var(--bg);
+}
+
+.graph-search {
+  width: 180px;
+  background: transparent;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.6rem;
+  outline: none;
+}
+
+.graph-search:focus {
+  border-color: #fff;
+}
+
+.graph-search::placeholder {
+  color: #555;
+}
+
+#results.filter-active .anime-circle {
+  opacity: 0.15;
+  transition: opacity 0.15s;
+}
+
+#results.filter-active .anime-circle.filter-match {
+  opacity: 1;
+  border-width: 7px;
 }
 
 .media-type-switch {

@@ -10,9 +10,19 @@ Static HTML webapp. No build tooling, no framework, no bundler. Dark-themed, ful
 
 ```
 index.html      shell — layout markup, links stylesheet + script
+favicon.svg     browser tab icon — inline SVG node-graph spelling "ag"
 css/style.css   global styles, layout, component styles
 js/main.js      all application logic
 ```
+
+## Favicon
+
+`favicon.svg` — `viewBox="0 0 33 50"`, default transparent background. Two node clusters:
+
+- **'a & g' cluster** (hue 190, cyan): 5 nodes forming a diamond (top/left/bottom/right) + stem-bottom. Lines: open circle A-B-C-D + descending stem D-E. Cluster polygon: `hsla(190,60%,60%,0.10)` fill.
+- **'g' cluster** (hue 30, orange): 3 nodes — 3-node descending hook (E-F-G-H). Cluster polygon: `hsla(30,60%,60%,0.10)` fill.
+
+Nodes are simple filled circles to improve readability.
 
 ## Layout
 
@@ -79,6 +89,15 @@ For each selection item (tag/genre) that appears in at least `clusterMin` connec
 `data-tag` attribute on each row stores the item name. Delegated `mouseover` on `#stats` reads `row.dataset.tag`, resets all cluster polygons to base, then highlights matching lines + circles + the matching cluster polygon. `mouseleave` restores all polygons and clears highlights.
 
 The `document` `mousemove` fallback returns early when cursor is over `.sidebar-left`, preventing the per-frame `clearHighlights()` from erasing stat-hover highlights.
+
+## Graph search filter
+
+`#graph-search` text input in topbar. On `input` event: if query non-empty, adds `.filter-active` to `#results` and `.filter-match` to each `.anime-circle` whose `mediaStore[idx]` title (romaji or english) includes the query (case-insensitive). CSS:
+
+- `.filter-active .anime-circle` → `opacity: 0.15`
+- `.filter-active .anime-circle.filter-match` → `opacity: 1`, `border-width: 7px`
+
+On clear: removes `.filter-active` + all `.filter-match`. Cleared automatically on new Search. Independent of hover highlights — both can coexist.
 
 ## Media type
 

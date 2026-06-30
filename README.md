@@ -1,8 +1,8 @@
-# anigraph
+# <img src="favicon.svg" height="128" align="middle" alt="anigraph favicon" style="margin-right: 1rem;" /> anigraph
 
 A little webapp for visualising information and statistics about anime.
 
-<img width="1367" height="797" alt="image" src="https://github.com/user-attachments/assets/de7712c8-eaa7-4f5e-8a13-eefef23e458d" />
+<img width="1367" height="797" alt="anigraph screenshot" src="https://github.com/user-attachments/assets/de7712c8-eaa7-4f5e-8a13-eefef23e458d" />
 
 *A graph of shared tags among the top 100 popular anime on AniList with highlighted clusters*
 
@@ -17,6 +17,7 @@ Open `index.html` in a browser — no build step required.
 Then:
 
 1. Use the **media type buttons** in the topbar to select Anime, Manga, or Novel. All input modes and features work for each type.
+   Use the **filter bar** (topbar, between type buttons and AniList link) to highlight matching circles by title — non-matching entries dim while typing.
 2. Use the **right sidebar** to import a `.txt` file (one title per line) and click **Search**.
 3. Matching entries appear as **circles** in a live physics simulation — nodes repel each other, shared-selection connections act as springs.
 4. **Drag** the center area to pan. **Scroll** over the center area to zoom.
@@ -32,6 +33,10 @@ Then:
 
 *An image of the full interface of anigraph*
 
+<img width="1372" height="867" alt="image" src="https://github.com/user-attachments/assets/801d91a4-6cf4-49ef-882b-4202e7c3a241" />
+
+*Top 100 Anime being filtered for "Attack on Titan"*
+
 Anime sharing selection items are connected by lines. Spring stiffness and line opacity scale with connection strength (relative to the strongest connection). Configure physics and selection in the right sidebar:
 
 | Setting | Effect |
@@ -45,10 +50,15 @@ Anime sharing selection items are connected by lines. Spring stiffness and line 
 
 Unmatched titles are silently omitted. Feedback (errors, rate limits) appears below the search button.
 
+## Favicon
+
+`favicon.svg` — inline SVG depicting "a" and "g" overlaid as one node-graph.
+
 ## Project structure
 
 ```
 index.html      entry point
+favicon.svg     browser tab icon
 css/style.css   global styles
 js/main.js      application logic
 ```

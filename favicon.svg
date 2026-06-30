@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 33 50">
+
+  <!-- Cluster polygon 'a' (hue 190) — convex hull of nodes with buffer -->
+  <polygon points="16,4 32,14 32,30 16,34 1,24 1,14"
+    fill="hsla(190,60%,60%,0.10)" stroke="hsla(190,70%,70%,0.45)"
+    stroke-width="1" stroke-linejoin="round"/>
+
+  <!-- Cluster polygon 'g' (hue 30) — convex hull of nodes with buffer -->
+  <polygon points="16,4 32,14 32,49 16,49 1,38 1,14"
+    fill="hsla(30,60%,60%,0.10)" stroke="hsla(30,70%,70%,0.45)"
+    stroke-width="1" stroke-linejoin="round"/>
+
+  <!-- Connections : 3/4 circle F-G-H-I (open top-right), hook I-J-K-L -->
+  <line x1="16" y1="11" x2="7" y2="19" stroke="rgba(255,255,255,0.52)" stroke-width="2.2"/>
+  <line x1="7" y1="19" x2="16" y2="27" stroke="rgba(255,255,255,0.52)" stroke-width="2.2"/>
+  <line x1="16" y1="27" x2="25" y2="19" stroke="rgba(255,255,255,0.52)" stroke-width="2.2"/>
+  <line x1="25" y1="19" x2="25" y2="37" stroke="rgba(255,255,255,0.52)" stroke-width="2.2"/>
+  <line x1="25" y1="37" x2="16" y2="43" stroke="rgba(255,255,255,0.52)" stroke-width="2.2"/>
+  <line x1="16" y1="43" x2="7" y2="37" stroke="rgba(255,255,255,0.52)" stroke-width="2.2"/>
+
+  <!-- Nodes — 'a' & 'g' (cyan hue 190) -->
+  <circle cx="16" cy="11" r="4" fill="hsla(190,70%,65%,1)"/>
+  <circle cx="7" cy="19" r="3" fill="hsla(190,70%,65%,1)"/>
+  <circle cx="16" cy="27" r="4" fill="hsla(190,70%,65%,1)"/>
+  <circle cx="25" cy="19" r="4" fill="hsla(190,70%,65%,1)"/>
+  <circle cx="25" cy="27" r="3" fill="hsla(190,70%,65%,1)"/>
+
+  <!-- Nodes — 'g' (orange hue 30) -->
+  <circle cx="25" cy="37" r="4" fill="hsla(30,70%,65%,1)"/>
+  <circle cx="16" cy="43" r="3" fill="hsla(30,70%,65%,1)"/>
+  <circle cx="7" cy="37" r="3" fill="hsla(30,70%,65%,1)"/>
+
+</svg>

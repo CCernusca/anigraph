@@ -16,17 +16,19 @@
           <button class="mode-btn media-type-btn" data-type="MANGA">Manga</button>
           <button class="mode-btn media-type-btn" data-type="NOVEL">Novel</button>
         </div>
-        <input id="graph-search" type="text" class="graph-search" placeholder="Filter results…" />
+        <input id="graph-search" type="text" class="graph-search" placeholder="title  #tag  #tag:minpct" />
         <a class="link-btn anilist-home" href="https://anilist.co" target="_blank" rel="noopener">AniList ↗</a>
       </header>
       <div class="content-area">
         <aside class="sidebar-left">
+          <button class="sidebar-toggle" id="toggle-left" title="Collapse sidebar">◀</button>
           <div id="stats"></div>
         </aside>
         <main class="center">
           <section id="results"></section>
         </main>
         <aside class="sidebar-right">
+          <button class="sidebar-toggle" id="toggle-right" title="Collapse sidebar">▶</button>
           <div class="settings">
             <p class="label">Input</p>
             <div class="mode-switch">

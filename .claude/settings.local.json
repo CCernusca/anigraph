@@ -8,7 +8,8 @@
       "Bash(Out-Null)",
       "Bash(n)",
       "Bash(n\" -Encoding utf8)",
-      "Bash(Set-Content -Path \"D:\\\\Projects\\\\anigraph\\\\ARCHITECTURE.md\" -Value \"# Architecture`n`n> Describes how anigraph works internally. Updated as features are added.`n`n## Overview`n`nanigraph is a webapp for visualising information and statistics about anime.`n`n_\\(Architecture details will be added as the project takes shape.\\)_`n\" -Encoding utf8)"
+      "Bash(Set-Content -Path \"D:\\\\Projects\\\\anigraph\\\\ARCHITECTURE.md\" -Value \"# Architecture`n`n> Describes how anigraph works internally. Updated as features are added.`n`n## Overview`n`nanigraph is a webapp for visualising information and statistics about anime.`n`n_\\(Architecture details will be added as the project takes shape.\\)_`n\" -Encoding utf8)",
+      "mcp__plugin_claude-mem_mcp-search__smart_outline"
     ]
   }
 }

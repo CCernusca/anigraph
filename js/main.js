@@ -243,6 +243,8 @@ function distToSegment(px, py, x1, y1, x2, y2) {
   return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
 }
 
+let lastTouchTime = 0;
+
 let connections = [];
 let lineConnMap = new Map();
 
@@ -453,6 +455,7 @@ function drawClusters() {
     const entry = { indices, poly, label, tag, baseFill, activeFill, baseStroke, activeStroke };
     clusterPolygons.push(entry);
     poly.addEventListener('mouseover', () => {
+      if (Date.now() - lastTouchTime < 500) return;
       entry.poly.setAttribute('fill', entry.activeFill);
       entry.poly.setAttribute('stroke', entry.activeStroke);
       clearHighlights();
@@ -586,6 +589,7 @@ function highlightCircles(...indices) {
 }
 
 document.addEventListener('mousemove', (e) => {
+  if (Date.now() - lastTouchTime < 500) return;
   if (e.target.closest?.('.anime-popup')) return;
 
   if (isPanning) {
@@ -892,6 +896,7 @@ function handleTap(clientX, clientY) {
 
 centerEl.addEventListener('touchstart', (e) => {
   e.preventDefault();
+  lastTouchTime = Date.now();
   if (e.touches.length === 1) {
     isPinching = false;
     isPanning = true;
@@ -929,6 +934,8 @@ centerEl.addEventListener('touchmove', (e) => {
 }, { passive: false });
 
 centerEl.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  lastTouchTime = Date.now();
   if (e.touches.length === 0) {
     if (!isPinching && e.changedTouches.length === 1) {
       const dx = e.changedTouches[0].clientX - tapStartX;
@@ -966,6 +973,7 @@ document.getElementById('profile-username').addEventListener('input', e => {
 });
 
 document.getElementById('stats').addEventListener('mouseover', (e) => {
+  if (Date.now() - lastTouchTime < 500) return;
   const row = e.target.closest('.stat-bar-row');
   if (!row) return;
   const tag = row.dataset.tag;

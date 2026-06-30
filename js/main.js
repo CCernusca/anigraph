@@ -636,31 +636,35 @@ function updateStats() {
   if (!statsEl) return;
   const n = mediaStore.length;
   const totalConns = simSprings.length;
-  if (n === 0) { statsEl.innerHTML = ''; return; }
   const tagCounts = new Map();
   for (const { shared } of simSprings) {
     for (const name of shared) tagCounts.set(name, (tagCounts.get(name) || 0) + 1);
   }
   const sorted = [...tagCounts.entries()].sort((a, b) => b[1] - a[1]);
   const maxCount = sorted.length > 0 ? sorted[0][1] : 1;
-  clusterMinSlider.max = maxCount;
-  if (clusterMin > maxCount) { clusterMin = maxCount; clusterMinSlider.value = maxCount; clusterMinVal.textContent = maxCount; }
+  if (n > 0 && sorted.length > 0) {
+    clusterMinSlider.max = maxCount;
+    if (clusterMin > maxCount) { clusterMin = maxCount; clusterMinSlider.value = maxCount; clusterMinVal.textContent = maxCount; }
+  }
   const visible = sorted.filter(([, count]) => count >= clusterMin);
+  const clustersHTML = visible.length > 0
+    ? `<div class="stat-bars">${visible.map(([name, count]) => {
+        const pct = totalConns > 0 ? Math.round(count / totalConns * 100) : 0;
+        const barW = (count / maxCount * 100).toFixed(1);
+        return `<div class="stat-bar-row" data-tag="${name.replace(/"/g, '&quot;')}">
+          <div class="stat-bar-label" title="${name}">${name}</div>
+          <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${barW}%"></div></div>
+          <div class="stat-bar-nums">${count} · ${pct}%</div>
+        </div>`;
+      }).join('')}</div>`
+    : `<p class="stats-empty">No clusters detected.</p>`;
   statsEl.innerHTML = `<p class="label">Overview</p>
   <div class="stat-counts">
     <span>${n} ${mediaType.toLowerCase()}</span>
     <span>${totalConns} connection${totalConns !== 1 ? 's' : ''}</span>
   </div>
   <p class="label">Clusters</p>
-  <div class="stat-bars">${visible.map(([name, count]) => {
-    const pct = totalConns > 0 ? Math.round(count / totalConns * 100) : 0;
-    const barW = (count / maxCount * 100).toFixed(1);
-    return `<div class="stat-bar-row" data-tag="${name.replace(/"/g, '&quot;')}">
-      <div class="stat-bar-label" title="${name}">${name}</div>
-      <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${barW}%"></div></div>
-      <div class="stat-bar-nums">${count} · ${pct}%</div>
-    </div>`;
-  }).join('')}</div>`;
+  ${clustersHTML}`;
 }
 
 function redrawIfLoaded() {
@@ -690,6 +694,7 @@ document.querySelectorAll('.media-type-btn').forEach(btn => {
     document.querySelectorAll('.media-type-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     mediaType = btn.dataset.type;
+    clearResults();
   });
 });
 
@@ -958,7 +963,7 @@ function displayResults(mediaArray) {
   startSimulation();
 }
 
-searchBtn.addEventListener('click', async () => {
+function clearResults() {
   stopSimulation();
   results.innerHTML = '';
   results.classList.remove('filter-active');
@@ -969,10 +974,16 @@ searchBtn.addEventListener('click', async () => {
   connections = [];
   clusterPolygons = [];
   lineConnMap = new Map();
+  simNodes = [];
+  simSprings = [];
   clearHighlights();
   mediaStore = [];
-  document.getElementById('stats').innerHTML = '';
+  updateStats();
   feedback.textContent = '';
+}
+
+searchBtn.addEventListener('click', async () => {
+  clearResults();
 
   try {
     let mediaArray;
@@ -1032,3 +1043,5 @@ document.getElementById('toggle-right').addEventListener('click', () => {
   document.getElementById('toggle-right').textContent = collapsed ? '◀' : '▶';
   document.getElementById('toggle-right').title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
 });
+
+updateStats();

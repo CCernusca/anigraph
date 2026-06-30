@@ -341,6 +341,22 @@ body {
   letter-spacing: 0.05em;
 }
 
+.sidebar-right .label {
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 1;
+  padding-top: 0.3rem;
+  margin-top: 0;
+}
+
+.stats-empty {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #444;
+  font-style: italic;
+}
+
 .tag-list {
   display: flex;
   flex-wrap: wrap;

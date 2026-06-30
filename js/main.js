@@ -854,6 +854,42 @@ function touchDist(touches) {
   );
 }
 
+const TAP_MAX_DIST = 10;
+const TOUCH_LINE_HIT_DIST = LINE_HIT_DIST * 3;
+let tapStartX = 0, tapStartY = 0;
+
+function handleTap(clientX, clientY) {
+  if (document.elementFromPoint(clientX, clientY)?.closest('.anime-popup')) return;
+  const el = document.elementFromPoint(clientX, clientY);
+  const circle = el?.closest('.anime-circle');
+  if (circle) {
+    clearHighlights();
+    const idx = parseInt(circle.dataset.index);
+    connections.filter(c => c.i === idx || c.j === idx).forEach(c => {
+      c.line.setAttribute('stroke', c.activeStroke);
+      highlightedLines.push(c.line);
+    });
+    popup.innerHTML = buildPopupContent(mediaStore[idx]);
+    popup.style.display = 'block';
+    const r = circle.getBoundingClientRect();
+    positionPopup(r.right + MARGIN, r.top);
+    return;
+  }
+  for (const conn of connections) {
+    if (distToSegment(clientX, clientY, conn.x1, conn.y1, conn.x2, conn.y2) <= TOUCH_LINE_HIT_DIST) {
+      highlightCircles(conn.i, conn.j);
+      conn.line.setAttribute('stroke', conn.activeStroke);
+      highlightedLines.push(conn.line);
+      popup.innerHTML = buildConnectionPopup(conn.shared);
+      popup.style.display = 'block';
+      positionPopup((conn.x1 + conn.x2) / 2 + MARGIN, (conn.y1 + conn.y2) / 2);
+      return;
+    }
+  }
+  clearHighlights();
+  popup.style.display = 'none';
+}
+
 centerEl.addEventListener('touchstart', (e) => {
   e.preventDefault();
   if (e.touches.length === 1) {
@@ -861,6 +897,8 @@ centerEl.addEventListener('touchstart', (e) => {
     isPanning = true;
     panStartX = e.touches[0].clientX;
     panStartY = e.touches[0].clientY;
+    tapStartX = panStartX;
+    tapStartY = panStartY;
     panStartCamX = camX;
     panStartCamY = camY;
   } else if (e.touches.length === 2) {
@@ -892,6 +930,13 @@ centerEl.addEventListener('touchmove', (e) => {
 
 centerEl.addEventListener('touchend', (e) => {
   if (e.touches.length === 0) {
+    if (!isPinching && e.changedTouches.length === 1) {
+      const dx = e.changedTouches[0].clientX - tapStartX;
+      const dy = e.changedTouches[0].clientY - tapStartY;
+      if (Math.hypot(dx, dy) < TAP_MAX_DIST) {
+        handleTap(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+      }
+    }
     isPanning = false;
     isPinching = false;
   } else if (e.touches.length === 1 && isPinching) {
@@ -899,10 +944,18 @@ centerEl.addEventListener('touchend', (e) => {
     isPanning = true;
     panStartX = e.touches[0].clientX;
     panStartY = e.touches[0].clientY;
+    tapStartX = panStartX;
+    tapStartY = panStartY;
     panStartCamX = camX;
     panStartCamY = camY;
   }
 }, { passive: false });
+
+document.addEventListener('touchend', (e) => {
+  if (e.target.closest?.('.center') || e.target.closest?.('.anime-popup')) return;
+  clearHighlights();
+  popup.style.display = 'none';
+}, { passive: true });
 
 fileInput.addEventListener('change', () => {
   if (inputMode === 'local') searchBtn.disabled = !fileInput.files[0];

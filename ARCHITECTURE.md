@@ -92,10 +92,16 @@ The `document` `mousemove` fallback returns early when cursor is over `.sidebar-
 
 ## Graph search filter
 
-`#graph-search` text input in topbar. On `input` event: if query non-empty, adds `.filter-active` to `#results` and `.filter-match` to each `.anime-circle` whose `mediaStore[idx]` title (romaji or english) includes the query (case-insensitive). CSS:
+`#graph-search` text input in topbar. On `input` event: if query non-empty, adds `.filter-active` to `#results` and `.filter-match` to each `.anime-circle` that matches all terms. CSS:
 
 - `.filter-active .anime-circle` → `opacity: 0.15`
 - `.filter-active .anime-circle.filter-match` → `opacity: 1`, `border-width: 7px`
+
+**Query parsing:** Raw input split on whitespace. Tokens starting with `#` are tag filters — `#` stripped, underscores replaced with spaces, lowercased. Optional `:N` suffix (last colon in token) sets a minimum rank threshold (`minRank`); parsed as integer, ignored if not a valid number. Remaining tokens rejoined as a single title query string.
+
+**Match logic (all must pass — AND):**
+- *Title:* `titleQuery` non-empty → romaji or english title must include it (case-insensitive). Vacuously true if no non-`#` tokens.
+- *Tags:* Each `{ name, minRank }` filter: a `media.tags` entry whose lowercased name includes `name` and whose `rank >= minRank` (or `minRank === null`) satisfies the filter. If no tag matches, falls back to `media.genres` substring match — only when `minRank === null` (rank threshold disables genre fallback).
 
 On clear: removes `.filter-active` + all `.filter-match`. Cleared automatically on new Search. Independent of hover highlights — both can coexist.
 
@@ -110,6 +116,8 @@ Affects all fetch paths:
 | Batch search | `type: ANIME` | `type: MANGA` | `type: MANGA, format: NOVEL` |
 | Popular | `type: ANIME` | `type: MANGA` | `type: MANGA, format: NOVEL` |
 | Profile | `MediaListCollection(type: ANIME)` | `MediaListCollection(type: MANGA)` | `MediaListCollection(type: MANGA)` + client filter `format === 'NOVEL'` |
+
+**Profile status filter:** Six checkboxes in `#input-profile` (Current, Completed, Paused, Dropped, Planning, Repeating — all checked by default). On search, checked values are collected into a `Set<string>` of AniList status enums (`CURRENT`, `COMPLETED`, `PAUSED`, `DROPPED`, `PLANNING`, `REPEATING`). `fetchProfile` receives this set and filters `collection.lists` by `l.status` before flattening entries. The query requests `status` on each list object. If no checkboxes are checked, search is blocked with a feedback message.
 
 AniList popup link uses `/anime/${id}` for ANIME, `/manga/${id}` for MANGA and NOVEL (AniList stores novels under `/manga/`).
 
@@ -155,6 +163,11 @@ Virtual camera state: `camX, camY` (world-space center) and `camZoom`. Initializ
 
 **Zoom:** `wheel` event inside `.center` only (non-passive, `preventDefault`). Zoom-to-pointer: record world position under cursor before zoom, recompute `camX/Y` to keep that world point under the cursor after zoom. Clamped to `[0.1, 10]`.
 
+**Touch (mobile):** `.center` has `touch-action: none` (prevents browser scroll interference). Three `{ passive: false }` touch listeners on `.center`:
+- `touchstart` — 1 finger: start pan (same variables as mouse pan). 2 fingers: start pinch — record `pinchStartDist`, `pinchStartZoom`, midpoint, and world point under midpoint.
+- `touchmove` — 1 finger + `isPanning`: update `camX/Y` like mouse pan. 2 fingers + `isPinching`: compute `camZoom = pinchStartZoom × (dist / pinchStartDist)`, then recompute `camX/Y` to keep pinch midpoint's world point fixed.
+- `touchend` — 0 fingers: clear both flags. 1 finger remaining after pinch: transition to pan from remaining touch position.
+
 **Projection** (world → screen, per frame in `updateSimDOM`):
 ```
 screenX = (worldX - camX) * camZoom + rect.width/2
@@ -175,6 +188,17 @@ Nodes (`simNodes[]`) live in world space (origin 0,0). Each frame:
 Constants: `SPRING_REST=130`, `REPEL_K=5000`, `CENTER_K=0.002`, `DRAG=0.82`. `springK` (default 0.04) is user-adjustable via the Spring strength slider in the right sidebar — takes effect immediately, no redraw needed.
 
 Loop runs via `requestAnimationFrame`. Stopped/restarted on new search. Selection mode changes rebuild spring topology without resetting node positions.
+
+## Retractable sidebars
+
+Each sidebar has a `.sidebar-toggle` button as its first child. Clicking toggles `.collapsed` on the sidebar and `left-collapsed` / `right-collapsed` on `.content-area`.
+
+**Grid:** Three class variants on `.content-area` narrow the relevant column to `--sidebar-collapsed-w` (24px):
+- `.left-collapsed` → `24px 1fr 220px`
+- `.right-collapsed` → `220px 1fr 24px`
+- Both → `24px 1fr 24px`
+
+**Collapsed sidebar:** `padding:0`, `gap:0`, `overflow:hidden`. All direct children except `.sidebar-toggle` get `display:none`. The toggle button expands to fill the full 24×100% strip and acts as a clickable handle. Arrow flips: `◀`↔`▶` (left), `▶`↔`◀` (right).
 
 ## Z-index layering
 

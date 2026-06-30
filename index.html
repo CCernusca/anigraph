@@ -16,17 +16,19 @@
           <button class="mode-btn media-type-btn" data-type="MANGA">Manga</button>
           <button class="mode-btn media-type-btn" data-type="NOVEL">Novel</button>
         </div>
-        <input id="graph-search" type="text" class="graph-search" placeholder="Filter results…" />
+        <input id="graph-search" type="text" class="graph-search" placeholder="title  #tag  #tag:minpct" />
         <a class="link-btn anilist-home" href="https://anilist.co" target="_blank" rel="noopener">AniList ↗</a>
       </header>
       <div class="content-area">
         <aside class="sidebar-left">
+          <button class="sidebar-toggle" id="toggle-left" title="Collapse sidebar">◀</button>
           <div id="stats"></div>
         </aside>
         <main class="center">
           <section id="results"></section>
         </main>
         <aside class="sidebar-right">
+          <button class="sidebar-toggle" id="toggle-right" title="Collapse sidebar">▶</button>
           <div class="settings">
             <p class="label">Input</p>
             <div class="mode-switch">
@@ -53,6 +55,14 @@
             <div id="input-profile" class="setting-panel" style="display:none">
               <input id="profile-username" type="text" placeholder="AniList username" class="text-input" />
               <span class="file-hint">Profile must be public</span>
+              <div class="status-checks">
+                <label class="vis-row"><input type="checkbox" class="status-check" value="CURRENT" checked> Current</label>
+                <label class="vis-row"><input type="checkbox" class="status-check" value="COMPLETED" checked> Completed</label>
+                <label class="vis-row"><input type="checkbox" class="status-check" value="PAUSED" checked> Paused</label>
+                <label class="vis-row"><input type="checkbox" class="status-check" value="DROPPED" checked> Dropped</label>
+                <label class="vis-row"><input type="checkbox" class="status-check" value="PLANNING" checked> Planning</label>
+                <label class="vis-row"><input type="checkbox" class="status-check" value="REPEATING" checked> Repeating</label>
+              </div>
             </div>
           </div>
           <button id="search-btn" type="button" disabled>Search</button>

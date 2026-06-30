@@ -46,7 +46,7 @@ async function fetchMediaBatch(terms) {
   return terms.map((term, i) => ({ term, media: data[`m${i}`] ?? null }));
 }
 
-async function fetchProfile(userName) {
+async function fetchProfile(userName, statuses) {
   const listType = mediaType === 'ANIME' ? 'ANIME' : 'MANGA';
   const res = await fetch(ANILIST_URL, {
     method: 'POST',
@@ -54,6 +54,7 @@ async function fetchProfile(userName) {
     body: JSON.stringify({ query: `query ($userName: String) {
       MediaListCollection(userName: $userName, type: ${listType}) {
         lists {
+          status
           entries {
             media {
               id title { romaji english } coverImage { medium color } genres tags { name rank } format
@@ -71,7 +72,9 @@ async function fetchProfile(userName) {
   if (!data) throw new Error(errors?.[0]?.message ?? `HTTP ${res.status}`);
   const collection = data.MediaListCollection;
   if (!collection) throw new Error('User not found or list is private.');
-  let items = collection.lists.flatMap(l => l.entries.map(e => e.media));
+  let items = collection.lists
+    .filter(l => statuses.has(l.status))
+    .flatMap(l => l.entries.map(e => e.media));
   if (mediaType === 'NOVEL') items = items.filter(m => m.format === 'NOVEL');
   return items;
 }
@@ -741,22 +744,48 @@ document.getElementById('vis-labels').addEventListener('change', e => {
 });
 
 document.getElementById('graph-search').addEventListener('input', e => {
-  const q = e.target.value.trim().toLowerCase();
+  const raw = e.target.value.trim();
   const circleEls = document.querySelectorAll('.anime-circle');
-  if (!q) {
+  if (!raw) {
     results.classList.remove('filter-active');
     circleEls.forEach(el => el.classList.remove('filter-match'));
     return;
   }
+  const parts = raw.split(/\s+/).filter(Boolean);
+  const tagFilters = parts
+    .filter(p => p.startsWith('#'))
+    .map(p => {
+      const raw = p.slice(1);
+      const colon = raw.lastIndexOf(':');
+      if (colon > 0) {
+        const minRank = parseInt(raw.slice(colon + 1), 10);
+        if (!isNaN(minRank)) {
+          return { name: raw.slice(0, colon).replace(/_/g, ' ').toLowerCase(), minRank };
+        }
+      }
+      return { name: raw.replace(/_/g, ' ').toLowerCase(), minRank: null };
+    });
+  const titleQuery = parts.filter(p => !p.startsWith('#')).join(' ').toLowerCase();
+
   results.classList.add('filter-active');
   circleEls.forEach(el => {
     const idx = parseInt(el.dataset.index);
     const media = mediaStore[idx];
-    const match = media && (
-      (media.title.romaji ?? '').toLowerCase().includes(q) ||
-      (media.title.english ?? '').toLowerCase().includes(q)
-    );
-    el.classList.toggle('filter-match', !!match);
+    if (!media) { el.classList.remove('filter-match'); return; }
+
+    const titleMatch = !titleQuery ||
+      (media.title.romaji ?? '').toLowerCase().includes(titleQuery) ||
+      (media.title.english ?? '').toLowerCase().includes(titleQuery);
+
+    const tagsMatch = tagFilters.every(({ name, minRank }) => {
+      const tagHit = media.tags.some(t =>
+        t.name.toLowerCase().includes(name) && (minRank === null || t.rank >= minRank)
+      );
+      if (tagHit) return true;
+      return minRank === null && media.genres.some(g => g.toLowerCase().includes(name));
+    });
+
+    el.classList.toggle('filter-match', titleMatch && tagsMatch);
   });
 });
 
@@ -805,6 +834,69 @@ document.addEventListener('wheel', (e) => {
   camZoom = Math.max(0.1, Math.min(10, camZoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1)));
   camX = wx - (e.clientX - vcx) / camZoom;
   camY = wy - (e.clientY - vcy) / camZoom;
+}, { passive: false });
+
+const centerEl = document.querySelector('.center');
+let isPinching = false;
+let pinchStartDist = 0, pinchStartZoom = 1;
+let pinchMidX = 0, pinchMidY = 0;
+let pinchWorldX = 0, pinchWorldY = 0;
+
+function touchDist(touches) {
+  return Math.hypot(
+    touches[1].clientX - touches[0].clientX,
+    touches[1].clientY - touches[0].clientY
+  );
+}
+
+centerEl.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  if (e.touches.length === 1) {
+    isPinching = false;
+    isPanning = true;
+    panStartX = e.touches[0].clientX;
+    panStartY = e.touches[0].clientY;
+    panStartCamX = camX;
+    panStartCamY = camY;
+  } else if (e.touches.length === 2) {
+    isPanning = false;
+    isPinching = true;
+    pinchStartDist = touchDist(e.touches);
+    pinchStartZoom = camZoom;
+    pinchMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+    pinchMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    const rect = results.getBoundingClientRect();
+    pinchWorldX = (pinchMidX - (rect.left + rect.width / 2)) / camZoom + camX;
+    pinchWorldY = (pinchMidY - (rect.top + rect.height / 2)) / camZoom + camY;
+  }
+}, { passive: false });
+
+centerEl.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  if (e.touches.length === 1 && isPanning) {
+    camX = panStartCamX - (e.touches[0].clientX - panStartX) / camZoom;
+    camY = panStartCamY - (e.touches[0].clientY - panStartY) / camZoom;
+  } else if (e.touches.length === 2 && isPinching) {
+    const dist = touchDist(e.touches);
+    camZoom = Math.max(0.1, Math.min(10, pinchStartZoom * dist / pinchStartDist));
+    const rect = results.getBoundingClientRect();
+    camX = pinchWorldX - (pinchMidX - (rect.left + rect.width / 2)) / camZoom;
+    camY = pinchWorldY - (pinchMidY - (rect.top + rect.height / 2)) / camZoom;
+  }
+}, { passive: false });
+
+centerEl.addEventListener('touchend', (e) => {
+  if (e.touches.length === 0) {
+    isPanning = false;
+    isPinching = false;
+  } else if (e.touches.length === 1 && isPinching) {
+    isPinching = false;
+    isPanning = true;
+    panStartX = e.touches[0].clientX;
+    panStartY = e.touches[0].clientY;
+    panStartCamX = camX;
+    panStartCamY = camY;
+  }
 }, { passive: false });
 
 fileInput.addEventListener('change', () => {
@@ -901,8 +993,12 @@ searchBtn.addEventListener('click', async () => {
     } else if (inputMode === 'profile') {
       const userName = document.getElementById('profile-username').value.trim();
       if (!userName) return;
+      const statuses = new Set(
+        [...document.querySelectorAll('.status-check:checked')].map(cb => cb.value)
+      );
+      if (!statuses.size) { feedback.textContent = 'Select at least one status.'; return; }
       feedback.textContent = `Fetching ${mediaType.toLowerCase()} list for ${userName}…`;
-      mediaArray = await fetchProfile(userName);
+      mediaArray = await fetchProfile(userName, statuses);
       if (!mediaArray.length) { feedback.textContent = `No ${mediaType.toLowerCase()} found in list.`; return; }
     } else {
       return;
@@ -917,4 +1013,22 @@ searchBtn.addEventListener('click', async () => {
       feedback.textContent = `Error: ${err.message}`;
     }
   }
+});
+
+document.getElementById('toggle-left').addEventListener('click', () => {
+  const sidebar = document.querySelector('.sidebar-left');
+  const area = document.querySelector('.content-area');
+  const collapsed = sidebar.classList.toggle('collapsed');
+  area.classList.toggle('left-collapsed', collapsed);
+  document.getElementById('toggle-left').textContent = collapsed ? '▶' : '◀';
+  document.getElementById('toggle-left').title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+});
+
+document.getElementById('toggle-right').addEventListener('click', () => {
+  const sidebar = document.querySelector('.sidebar-right');
+  const area = document.querySelector('.content-area');
+  const collapsed = sidebar.classList.toggle('collapsed');
+  area.classList.toggle('right-collapsed', collapsed);
+  document.getElementById('toggle-right').textContent = collapsed ? '◀' : '▶';
+  document.getElementById('toggle-right').title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
 });

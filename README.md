@@ -1,6 +1,14 @@
 # <img src="favicon.svg" height="128" align="middle" alt="anigraph favicon" style="margin-right: 1rem;" /> anigraph
 
-A little webapp for visualising information and statistics about anime.
+## Introduction
+
+- **Discover connections** — see which anime, manga, or novels share tags and genres, visualised as a live force-directed graph
+- **Explore any list** — load a custom title list, browse the all-time popular charts (top 10–300), or pull directly from a public AniList profile
+- **Filter and focus** — search by title, tag, or genre (`#action:80`) to highlight exactly what you're looking for across a large graph
+- **Spot clusters** — colour-coded cluster polygons and a ranked stat panel show which tags dominate the graph and how tightly entries group around them
+- **Tune the view** — adjust tag acceptance thresholds, switch between tag and genre modes, toggle visual layers, and collapse sidebars for a cleaner canvas
+
+No account or API key needed — data is fetched live from the public [AniList](https://anilist.co) GraphQL API.
 
 <img width="1367" height="797" alt="anigraph screenshot" src="https://github.com/user-attachments/assets/de7712c8-eaa7-4f5e-8a13-eefef23e458d" />
 

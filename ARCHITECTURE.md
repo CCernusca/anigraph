@@ -88,6 +88,16 @@ For each selection item (tag/genre) that appears in at least `clusterMin` connec
 
 **Right sidebar sticky headers:** `.sidebar-right .label` uses `position: sticky; top: 0; background: var(--bg); z-index: 1` so section titles (Input, Visuals, Connections, Clusters) remain visible while scrolling the sidebar.
 
+## Mobile layout (`@media (max-width: 640px)`)
+
+**Topbar:** switches to `flex-wrap: wrap`. Row 1: site title + AniList link (space-between). Row 2: media type buttons (100% width, `order: 3`). Row 3: filter input (100% width, `order: 4`). `grid-template-rows: auto 1fr` to accommodate variable topbar height.
+
+**Sidebars:** Grid columns are always `24px 1fr 24px` regardless of JS collapse state (all `.content-area` variants overridden via media query). Both sidebars default to a 24px clickable strip. Sidebar content is wrapped in `.sidebar-content { display: contents }` — hidden on mobile via `display: none`, shown via `display: contents` when open.
+
+**Sidebar toggle (mobile):** Tap opens the sidebar as `position: fixed` overlay (`z-index: 100`, `width: min(220px, 85vw)`, `height: 100dvh`), with a drop shadow. The toggle button inside becomes sticky at the top of the overlay for easy closing. Arrow semantics match desktop: `◀`/`▶` for left, `▶`/`◀` for right.
+
+**Breakpoint crossing:** `mobileQuery.addEventListener('change', resetSidebarState)` clears all `.collapsed` / `.mobile-open` / grid classes so sidebars start fresh at their default state after resizing.
+
 `data-tag` attribute on each row stores the item name. Delegated `mouseover` on `#stats` reads `row.dataset.tag`, resets all cluster polygons to base, then highlights matching lines + circles + the matching cluster polygon. `mouseleave` restores all polygons and clears highlights.
 
 The `document` `mousemove` fallback returns early when cursor is over `.sidebar-left`, preventing the per-frame `clearHighlights()` from erasing stat-hover highlights.

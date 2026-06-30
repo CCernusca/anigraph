@@ -134,6 +134,7 @@ body {
   position: relative;
   overflow: visible;
   padding: 0;
+  touch-action: none;
 }
 
 #results {

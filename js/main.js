@@ -836,6 +836,69 @@ document.addEventListener('wheel', (e) => {
   camY = wy - (e.clientY - vcy) / camZoom;
 }, { passive: false });
 
+const centerEl = document.querySelector('.center');
+let isPinching = false;
+let pinchStartDist = 0, pinchStartZoom = 1;
+let pinchMidX = 0, pinchMidY = 0;
+let pinchWorldX = 0, pinchWorldY = 0;
+
+function touchDist(touches) {
+  return Math.hypot(
+    touches[1].clientX - touches[0].clientX,
+    touches[1].clientY - touches[0].clientY
+  );
+}
+
+centerEl.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  if (e.touches.length === 1) {
+    isPinching = false;
+    isPanning = true;
+    panStartX = e.touches[0].clientX;
+    panStartY = e.touches[0].clientY;
+    panStartCamX = camX;
+    panStartCamY = camY;
+  } else if (e.touches.length === 2) {
+    isPanning = false;
+    isPinching = true;
+    pinchStartDist = touchDist(e.touches);
+    pinchStartZoom = camZoom;
+    pinchMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+    pinchMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    const rect = results.getBoundingClientRect();
+    pinchWorldX = (pinchMidX - (rect.left + rect.width / 2)) / camZoom + camX;
+    pinchWorldY = (pinchMidY - (rect.top + rect.height / 2)) / camZoom + camY;
+  }
+}, { passive: false });
+
+centerEl.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  if (e.touches.length === 1 && isPanning) {
+    camX = panStartCamX - (e.touches[0].clientX - panStartX) / camZoom;
+    camY = panStartCamY - (e.touches[0].clientY - panStartY) / camZoom;
+  } else if (e.touches.length === 2 && isPinching) {
+    const dist = touchDist(e.touches);
+    camZoom = Math.max(0.1, Math.min(10, pinchStartZoom * dist / pinchStartDist));
+    const rect = results.getBoundingClientRect();
+    camX = pinchWorldX - (pinchMidX - (rect.left + rect.width / 2)) / camZoom;
+    camY = pinchWorldY - (pinchMidY - (rect.top + rect.height / 2)) / camZoom;
+  }
+}, { passive: false });
+
+centerEl.addEventListener('touchend', (e) => {
+  if (e.touches.length === 0) {
+    isPanning = false;
+    isPinching = false;
+  } else if (e.touches.length === 1 && isPinching) {
+    isPinching = false;
+    isPanning = true;
+    panStartX = e.touches[0].clientX;
+    panStartY = e.touches[0].clientY;
+    panStartCamX = camX;
+    panStartCamY = camY;
+  }
+}, { passive: false });
+
 fileInput.addEventListener('change', () => {
   if (inputMode === 'local') searchBtn.disabled = !fileInput.files[0];
 });

@@ -163,6 +163,11 @@ Virtual camera state: `camX, camY` (world-space center) and `camZoom`. Initializ
 
 **Zoom:** `wheel` event inside `.center` only (non-passive, `preventDefault`). Zoom-to-pointer: record world position under cursor before zoom, recompute `camX/Y` to keep that world point under the cursor after zoom. Clamped to `[0.1, 10]`.
 
+**Touch (mobile):** `.center` has `touch-action: none` (prevents browser scroll interference). Three `{ passive: false }` touch listeners on `.center`:
+- `touchstart` — 1 finger: start pan (same variables as mouse pan). 2 fingers: start pinch — record `pinchStartDist`, `pinchStartZoom`, midpoint, and world point under midpoint.
+- `touchmove` — 1 finger + `isPanning`: update `camX/Y` like mouse pan. 2 fingers + `isPinching`: compute `camZoom = pinchStartZoom × (dist / pinchStartDist)`, then recompute `camX/Y` to keep pinch midpoint's world point fixed.
+- `touchend` — 0 fingers: clear both flags. 1 finger remaining after pinch: transition to pan from remaining touch position.
+
 **Projection** (world → screen, per frame in `updateSimDOM`):
 ```
 screenX = (worldX - camX) * camZoom + rect.width/2
